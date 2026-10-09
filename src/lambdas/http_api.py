@@ -612,6 +612,7 @@ def get_job_title(
 
     valid_sort_columns = [
         "jt.id",
+        "jt.department.id",
         "department",
         "title",
         "default_ft_weekly_hours",
@@ -629,6 +630,7 @@ def get_job_title(
     get_job_title_sql = SQL("""
         SELECT
             jt.id
+            ,jt.department_id
             ,d.name AS department
             ,jt.title
             ,jt.default_ft_weekly_hours
