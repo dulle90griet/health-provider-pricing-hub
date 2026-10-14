@@ -290,7 +290,7 @@ class Service(BaseModel):
         int, Field(ge=-(2**31), le=2**31 - 1)
     ]
     required_profit_margin_percentage: Annotated[
-        Decimal, Field(max_digits=4, decimal_places=2)
+        Decimal, Field(max_digits=5, decimal_places=2)
     ]
     acceptable_market_price_gbp: Annotated[
         Decimal, Field(max_digits=10, decimal_places=4)
@@ -318,7 +318,7 @@ UpdateOverheadCost = create_partial_model(OverheadCost)
 class LabourCost(BaseModel):
     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     title_engaged_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    required_time_mins: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
+    required_time_mins: Annotated[int, Field(ge=1, le=2**31 - 1)]
 
 
 UpdateLabourCost = create_partial_model(LabourCost)

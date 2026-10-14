@@ -478,7 +478,7 @@ def initialize_database(psql_conn):
                 ,"service_name" varchar(75) NOT NULL
                 ,"xero_code" int NOT NULL
                 ,"overhead_recovery_on_labour_percentage" int NOT NULL
-                ,"required_profit_margin_percentage" decimal(4,2) NOT NULL
+                ,"required_profit_margin_percentage" decimal(5,2) NOT NULL
                 ,"acceptable_market_price_gbp" decimal(10,4) NOT NULL
                 ,"our_current_unit_price_gbp" decimal(10,4) NOT NULL
                 ,"new_unit_price_gbp" decimal(10,4)
