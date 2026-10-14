@@ -458,7 +458,7 @@ def initialize_database(psql_conn):
                 ,"department_id" int NOT NULL
                 ,"title" varchar(50) NOT NULL
                 ,"default_ft_weekly_hours" decimal(3,1) NOT NULL
-                ,"default_lunch_break_hours" decimal(2,1) NOT NULL
+                ,"default_lunch_break_mins" int NOT NULL
                 ,"hourly_rate_gbp" decimal(9,4) NOT NULL
                 ,"default_annual_holiday_days" decimal(3,1)
                 ,"default_annual_training_days" decimal(3,1)
@@ -589,16 +589,16 @@ def seed_job_title(psql_conn):
         seed_job_title_sql = """
             INSERT INTO job_title
                 (department_id, title, default_ft_weekly_hours,
-                default_lunch_break_hours, hourly_rate_gbp,
+                default_lunch_break_mins, hourly_rate_gbp,
                 default_annual_holiday_days,
                 default_annual_training_days,
                 default_annual_sick_days)
             VALUES
-                (4, 'Occupational Health Nurse', 37.5, 0.8, 99.27, 33, 10, 3)
-                ,(5, 'Occupational Health Technician (Onsite/Offsite)', 37.5, 0.8, 12.13, 33, 10, 3)
-                ,(3, 'Travel Nurse', 37.5, 0.8, 34.56, 33, 10, 3)
-                ,(2, 'Occupational Health Physician', 44.5, 0.8, 23.27, 33, 10, 2)
-                ,(2, 'Associate', 38.0, 0.8, 86.29, 33, 10, 2)
+                (4, 'Occupational Health Nurse', 37.5, 40, 99.27, 33, 10, 3)
+                ,(5, 'Occupational Health Technician (Onsite/Offsite)', 37.5, 40, 12.13, 33, 10, 3)
+                ,(3, 'Travel Nurse', 37.5, 40, 34.56, 33, 10, 3)
+                ,(2, 'Occupational Health Physician', 44.5, 40, 23.27, 33, 10, 2)
+                ,(2, 'Associate', 38.0, 40, 86.29, 33, 10, 2)
                 ,(1, 'Managing Director', 37.5, 0, 72.27, 33, 10, 3)
                 ,(1, 'Operations Manager', 37.5, 0, 72.27, 33, 10, 3)
                 ,(1, 'Finance Manager', 37.5, 0, 72.27, 33, 10, 3)

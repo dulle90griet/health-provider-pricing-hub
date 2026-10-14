@@ -263,7 +263,7 @@ class JobTitle(BaseModel):
     department_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     title: Annotated[str, Field(max_length=50)]
     default_ft_weekly_hours: Annotated[Decimal, Field(max_digits=3, decimal_places=1)]
-    default_lunch_break_hours: Annotated[Decimal, Field(max_digits=2, decimal_places=1)]
+    default_lunch_break_mins: Annotated[int, Field(ge=0, le=240)]
     hourly_rate_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
     default_annual_holiday_days: OptionalDecimal(3, 1) = None
     default_annual_training_days: OptionalDecimal(3, 1) = None
@@ -616,7 +616,7 @@ def get_job_title(
         "department",
         "title",
         "default_ft_weekly_hours",
-        "default_lunch_break_hours",
+        "default_lunch_break_mins",
         "hourly_rate_gbp",
         "default_annual_holiday_days",
         "default_annual_training_days",
@@ -634,7 +634,7 @@ def get_job_title(
             ,d.name AS department
             ,jt.title
             ,jt.default_ft_weekly_hours
-            ,jt.default_lunch_break_hours
+            ,jt.default_lunch_break_mins
             ,jt.hourly_rate_gbp
             ,jt.default_annual_holiday_days
             ,jt.default_annual_training_days
@@ -691,7 +691,7 @@ def post_job_title(body: Annotated[lax_lists[JobTitle], Body()]) -> None:
         "department_id",
         "title",
         "default_ft_weekly_hours",
-        "default_lunch_break_hours",
+        "default_lunch_break_mins",
         "hourly_rate_gbp",
         "default_annual_holiday_days",
         "default_annual_training_days",
