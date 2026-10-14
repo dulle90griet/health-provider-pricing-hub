@@ -1712,7 +1712,7 @@ def get_rich_tender_line_items(
         ({fully_absorbed_cost_gbp}) + ({profit_margin_gbp})
     """
     unit_price_to_use = """
-        COALESCE(base.tender_override_unit_price_gbp, base.our_current_unit_price_gbp)
+        COALESCE(base.unit_price_override_gbp, base.our_current_unit_price_gbp)
     """
     annual_sales_gbp = f"({unit_price_to_use}) * base.total_number_pa"
     annual_labour_gbp = "base.labour_cost_gbp * base.total_number_pa"
@@ -1751,7 +1751,7 @@ def get_rich_tender_line_items(
         "profit_margin_gbp",
         "recommended_unit_price_gbp",
         "our_current_unit_price_gbp",
-        "tender_override_unit_price_gbp",
+        "unit_price_override_gbp",
         "annual_sales_gbp",
         "annual_labour_gbp",
         "annual_direct_gbp",
@@ -1801,7 +1801,7 @@ def get_rich_tender_line_items(
                     ,COALESCE(dc.total_cost_gbp, 0) AS direct_cost_gbp
                     ,s.required_profit_margin_percentage
                     ,s.our_current_unit_price_gbp
-                    ,ft.unit_price_override_gbp AS tender_override_unit_price_gbp
+                    ,ft.unit_price_override_gbp
                 FROM tender_line_items_filtered ft
                 LEFT OUTER JOIN tender t
                     ON ft.tender_id = t.id
@@ -1829,7 +1829,7 @@ def get_rich_tender_line_items(
             ,ROUND({profit_margin_gbp}, 4) AS profit_margin_gbp
             ,ROUND({recommended_unit_price_gbp}, 4) AS recommended_unit_price_gbp
             ,base.our_current_unit_price_gbp
-            ,base.tender_override_unit_price_gbp
+            ,base.unit_price_override_gbp
             ,ROUND({annual_sales_gbp}, 4) AS annual_sales_gbp
             ,ROUND({annual_labour_gbp}, 4) AS annual_labour_gbp
             ,ROUND({annual_direct_gbp}, 4) as annual_direct_gbp
