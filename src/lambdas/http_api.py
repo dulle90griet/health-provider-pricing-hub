@@ -1929,6 +1929,7 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
             "routeKey": event["requestContext"].get("routeKey"),
             "stage": event["requestContext"].get("stage"),
         },
+        "body": event.get("body"),
     }
     logger.info(f"event: {loggable_event}\n\ncontext: {context}")
 
