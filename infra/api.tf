@@ -27,7 +27,7 @@ resource "aws_apigatewayv2_integration" "http_api_lambda_integration" {
   }
 }
 
-resource "aws_apigatewayv2_route" "http_api_get_routes" {
+resource "aws_apigatewayv2_route" "http_api_routes" {
   for_each = toset([
     "GET /department",
     "GET /job-title",
