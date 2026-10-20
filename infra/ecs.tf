@@ -210,6 +210,7 @@ resource "aws_ecs_service" "budibase_ecs_service" {
   #   - Health check grace period: 0 (disabled)
   # Enable ECS Exec
   enable_execute_command = true
+  propagate_tags         = "TASK_DEFINITION"
 
   # Networking:
   network_configuration {
