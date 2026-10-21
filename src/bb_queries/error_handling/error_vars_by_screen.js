@@ -34,7 +34,7 @@ const fieldDisplays = {
   "department_id": "Department ID",
   "title": "Title",
   "default_ft_weekly_hours": "Default FT Weekly Hours",
-  "default_luncH_break_hours": "Default Lunch Break Hours",
+  "default_lunch_break_mins": "Default Lunch Break Minutes",
   "hourly_rate_gbp": "Hourly Rate (GBP)",
   "default_annual_holiday_days": "Default Annual Holiday Days",
   "default_annual_training_days": "Default Annual Training Days",

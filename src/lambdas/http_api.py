@@ -91,8 +91,11 @@ def empty_to_none(value: str | Decimal | None) -> Decimal | None:
 
     This validator runs before Pydantic's built-in validation,
     so empty strings are treated as None instead of raising an error.
+
+    Also accepts a string of "-", as a workaround for systems incapable
+    of sending JSON null values.
     """
-    if value in ("", None):
+    if value in ("", "-", None):
         return None
     if isinstance(value, Decimal):
         return value
@@ -263,7 +266,7 @@ class JobTitle(BaseModel):
     department_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     title: Annotated[str, Field(max_length=50)]
     default_ft_weekly_hours: Annotated[Decimal, Field(max_digits=3, decimal_places=1)]
-    default_lunch_break_hours: Annotated[Decimal, Field(max_digits=2, decimal_places=1)]
+    default_lunch_break_mins: Annotated[int, Field(ge=0, le=240)]
     hourly_rate_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
     default_annual_holiday_days: OptionalDecimal(3, 1) = None
     default_annual_training_days: OptionalDecimal(3, 1) = None
@@ -290,7 +293,7 @@ class Service(BaseModel):
         int, Field(ge=-(2**31), le=2**31 - 1)
     ]
     required_profit_margin_percentage: Annotated[
-        Decimal, Field(max_digits=4, decimal_places=2)
+        Decimal, Field(max_digits=5, decimal_places=2)
     ]
     acceptable_market_price_gbp: Annotated[
         Decimal, Field(max_digits=10, decimal_places=4)
@@ -318,7 +321,7 @@ UpdateOverheadCost = create_partial_model(OverheadCost)
 class LabourCost(BaseModel):
     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     title_engaged_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    required_time_mins: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
+    required_time_mins: Annotated[int, Field(ge=0, le=2**31 - 1)]
 
 
 UpdateLabourCost = create_partial_model(LabourCost)
@@ -612,10 +615,11 @@ def get_job_title(
 
     valid_sort_columns = [
         "jt.id",
+        "jt.department.id",
         "department",
         "title",
         "default_ft_weekly_hours",
-        "default_lunch_break_hours",
+        "default_lunch_break_mins",
         "hourly_rate_gbp",
         "default_annual_holiday_days",
         "default_annual_training_days",
@@ -629,10 +633,11 @@ def get_job_title(
     get_job_title_sql = SQL("""
         SELECT
             jt.id
+            ,jt.department_id
             ,d.name AS department
             ,jt.title
             ,jt.default_ft_weekly_hours
-            ,jt.default_lunch_break_hours
+            ,jt.default_lunch_break_mins
             ,jt.hourly_rate_gbp
             ,jt.default_annual_holiday_days
             ,jt.default_annual_training_days
@@ -689,7 +694,7 @@ def post_job_title(body: Annotated[lax_lists[JobTitle], Body()]) -> None:
         "department_id",
         "title",
         "default_ft_weekly_hours",
-        "default_lunch_break_hours",
+        "default_lunch_break_mins",
         "hourly_rate_gbp",
         "default_annual_holiday_days",
         "default_annual_training_days",
@@ -1710,7 +1715,7 @@ def get_rich_tender_line_items(
         ({fully_absorbed_cost_gbp}) + ({profit_margin_gbp})
     """
     unit_price_to_use = """
-        COALESCE(base.tender_override_unit_price_gbp, base.our_current_unit_price_gbp)
+        COALESCE(base.unit_price_override_gbp, base.our_current_unit_price_gbp)
     """
     annual_sales_gbp = f"({unit_price_to_use}) * base.total_number_pa"
     annual_labour_gbp = "base.labour_cost_gbp * base.total_number_pa"
@@ -1749,7 +1754,7 @@ def get_rich_tender_line_items(
         "profit_margin_gbp",
         "recommended_unit_price_gbp",
         "our_current_unit_price_gbp",
-        "tender_override_unit_price_gbp",
+        "unit_price_override_gbp",
         "annual_sales_gbp",
         "annual_labour_gbp",
         "annual_direct_gbp",
@@ -1799,7 +1804,7 @@ def get_rich_tender_line_items(
                     ,COALESCE(dc.total_cost_gbp, 0) AS direct_cost_gbp
                     ,s.required_profit_margin_percentage
                     ,s.our_current_unit_price_gbp
-                    ,ft.unit_price_override_gbp AS tender_override_unit_price_gbp
+                    ,ft.unit_price_override_gbp
                 FROM tender_line_items_filtered ft
                 LEFT OUTER JOIN tender t
                     ON ft.tender_id = t.id
@@ -1827,7 +1832,7 @@ def get_rich_tender_line_items(
             ,ROUND({profit_margin_gbp}, 4) AS profit_margin_gbp
             ,ROUND({recommended_unit_price_gbp}, 4) AS recommended_unit_price_gbp
             ,base.our_current_unit_price_gbp
-            ,base.tender_override_unit_price_gbp
+            ,base.unit_price_override_gbp
             ,ROUND({annual_sales_gbp}, 4) AS annual_sales_gbp
             ,ROUND({annual_labour_gbp}, 4) AS annual_labour_gbp
             ,ROUND({annual_direct_gbp}, 4) as annual_direct_gbp
@@ -1927,6 +1932,7 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
             "routeKey": event["requestContext"].get("routeKey"),
             "stage": event["requestContext"].get("stage"),
         },
+        "body": event.get("body"),
     }
     logger.info(f"event: {loggable_event}\n\ncontext: {context}")
 
