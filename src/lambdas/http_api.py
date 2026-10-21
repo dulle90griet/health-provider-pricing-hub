@@ -91,8 +91,11 @@ def empty_to_none(value: str | Decimal | None) -> Decimal | None:
 
     This validator runs before Pydantic's built-in validation,
     so empty strings are treated as None instead of raising an error.
+
+    Also accepts a string of "-", as a workaround for systems incapable
+    of sending JSON null values.
     """
-    if value in ("", None):
+    if value in ("", "-", None):
         return None
     if isinstance(value, Decimal):
         return value
@@ -318,7 +321,7 @@ UpdateOverheadCost = create_partial_model(OverheadCost)
 class LabourCost(BaseModel):
     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     title_engaged_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    required_time_mins: Annotated[int, Field(ge=1, le=2**31 - 1)]
+    required_time_mins: Annotated[int, Field(ge=0, le=2**31 - 1)]
 
 
 UpdateLabourCost = create_partial_model(LabourCost)
