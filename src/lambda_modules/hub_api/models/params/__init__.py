@@ -1,3 +1,7 @@
 from .queries import URIQueries
+from .sort import SortClauses
 
-__all__ = ["URIQueries"]
+__all__ = [
+    "SortClauses",
+    "URIQueries",
+]
