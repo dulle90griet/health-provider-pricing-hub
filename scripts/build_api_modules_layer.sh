@@ -5,7 +5,9 @@ set -euo pipefail
 ORIG="src/lambda_modules"
 DEST="packages/layer"
 OUT_ZIP="api_modules_layer.zip"
-MODULES=("test_module")
+MODULES=(
+    "api_logger.py"
+)
 
 # make temp dir and store its address
 TMP_DIR="$(mktemp -d)"
@@ -19,6 +21,9 @@ mkdir "$TMP_DIR/python"
 for MODULE in "${MODULES[@]}"; do
     cp -r "$ORIG/$MODULE" "$TMP_DIR/python"
 done
+
+# delete pycache files
+find "$TMP_DIR" -type d -name "__pycache__" -prune -exec rm -rf {} +
 
 # make sure the destination exists
 mkdir -p "$DEST"
