@@ -5,11 +5,7 @@ set -euo pipefail
 ORIG="src/lambda_modules"
 DEST="packages/layer"
 OUT_ZIP="api_modules_layer.zip"
-MODULES=(
-    "models"
-    "api_logger.py"
-    "lax_list.py"
-)
+MODULES=("hub_api")
 
 # make temp dir and store its address
 TMP_DIR="$(mktemp -d)"

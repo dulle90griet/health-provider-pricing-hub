@@ -30,8 +30,8 @@ import boto3
 from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
-from api_logger import logger
-from models import build_optional_decimal_type, build_lax_list_model
+from hub_api.logger import logger
+from hub_api.models import build_optional_decimal_type, build_lax_list_model
 
 
 # logger = logging.getLogger("logger")
