@@ -1,15 +1,14 @@
 import os
-from decimal import Decimal, InvalidOperation as InvalidDecimalOperation
+from decimal import Decimal
 from datetime import datetime
 import json
 
-from typing import Optional, TypeVar, ClassVar, Type, TypeAlias, Literal
+from typing import Optional, TypeVar, ClassVar, Type, Literal
 from typing_extensions import Annotated
 from pydantic import (
     RootModel,
     BaseModel,
     Field,
-    BeforeValidator,
     model_validator,
     field_validator,
 )
@@ -34,6 +33,7 @@ from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
 from api_logger import logger
+from models import build_optional_decimal_type
 
 
 # logger = logging.getLogger("logger")
@@ -86,46 +86,46 @@ def filter_by_whitelist(
         raise ValueError("Invalid mode name.")
 
 
-def empty_to_none(value: str | Decimal | None) -> Decimal | None:
-    """
-    Convert empty strings to None for optional Decimal fields.
+# def empty_to_none(value: str | Decimal | None) -> Decimal | None:
+#     """
+#     Convert empty strings to None for optional Decimal fields.
 
-    This validator runs before Pydantic's built-in validation,
-    so empty strings are treated as None instead of raising an error.
+#     This validator runs before Pydantic's built-in validation,
+#     so empty strings are treated as None instead of raising an error.
 
-    Also accepts a string of "-", as a workaround for systems incapable
-    of sending JSON null values.
-    """
-    if value in ("", "-", None):
-        return None
-    if isinstance(value, Decimal):
-        return value
-    if isinstance(value, bool):
-        raise ValueError("Boolean values are not allowed for Decimal fields")
-    try:
-        return Decimal(value)
-    except (InvalidDecimalOperation, TypeError) as e:
-        raise ValueError(f"Invalid decimal value: {value}") from e
+#     Also accepts a string of "-", as a workaround for systems incapable
+#     of sending JSON null values.
+#     """
+#     if value in ("", "-", None):
+#         return None
+#     if isinstance(value, Decimal):
+#         return value
+#     if isinstance(value, bool):
+#         raise ValueError("Boolean values are not allowed for Decimal fields")
+#     try:
+#         return Decimal(value)
+#     except (InvalidDecimalOperation, TypeError) as e:
+#         raise ValueError(f"Invalid decimal value: {value}") from e
 
 
-def OptionalDecimal(max_digits: int, decimal_places: int) -> TypeAlias:
-    """
-    Create an Optional Decimal type with empty string handling and constraints.
+# def OptionalDecimal(max_digits: int, decimal_places: int) -> TypeAlias:
+#     """
+#     Create an Optional Decimal type with empty string handling and constraints.
 
-    Args:
-        max_digits: Maximum total number of digits
-        decimal_places: Maximum number of decimal places
+#     Args:
+#         max_digits: Maximum total number of digits
+#         decimal_places: Maximum number of decimal places
 
-    Returns:
-        A type alias that can be used in Pydantic models
-    """
-    return Annotated[
-        None
-        | Annotated[
-            Decimal, Field(max_digits=max_digits, decimal_places=decimal_places)
-        ],
-        BeforeValidator(empty_to_none),
-    ]
+#     Returns:
+#         A type alias that can be used in Pydantic models
+#     """
+#     return Annotated[
+#         None
+#         | Annotated[
+#             Decimal, Field(max_digits=max_digits, decimal_places=decimal_places)
+#         ],
+#         BeforeValidator(empty_to_none),
+#     ]
 
 
 class URIQueries(BaseModel):
@@ -269,9 +269,9 @@ class JobTitle(BaseModel):
     default_ft_weekly_hours: Annotated[Decimal, Field(max_digits=3, decimal_places=1)]
     default_lunch_break_mins: Annotated[int, Field(ge=0, le=240)]
     hourly_rate_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
-    default_annual_holiday_days: OptionalDecimal(3, 1) = None
-    default_annual_training_days: OptionalDecimal(3, 1) = None
-    default_annual_sick_days: OptionalDecimal(3, 1) = None
+    default_annual_holiday_days: build_optional_decimal_type(3, 1) = None
+    default_annual_training_days: build_optional_decimal_type(3, 1) = None
+    default_annual_sick_days: build_optional_decimal_type(3, 1) = None
 
 
 UpdateJobTitle = create_partial_model(JobTitle)
@@ -279,7 +279,7 @@ UpdateJobTitle = create_partial_model(JobTitle)
 
 class Consumable(BaseModel):
     consumable_name: Annotated[str, Field(max_length=100)]
-    default_unit_cost_gbp: OptionalDecimal(8, 4) = None
+    default_unit_cost_gbp: build_optional_decimal_type(8, 4) = None
 
 
 UpdateConsumable = create_partial_model(Consumable)
@@ -302,8 +302,8 @@ class Service(BaseModel):
     our_current_unit_price_gbp: Annotated[
         Decimal, Field(max_digits=10, decimal_places=4)
     ]
-    new_unit_price_gbp: OptionalDecimal(10, 4) = None
-    new_day_rate_gbp: OptionalDecimal(10, 4) = None
+    new_unit_price_gbp: build_optional_decimal_type(10, 4) = None
+    new_day_rate_gbp: build_optional_decimal_type(10, 4) = None
     comments: Optional[Annotated[str, Field(max_length=100)]] = None
 
 
@@ -358,7 +358,7 @@ class TenderLineItem(BaseModel):
     tender_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     total_number_pa: Annotated[int, Field(ge=0, le=2**31 - 1)]
-    unit_price_override_gbp: OptionalDecimal(10, 4) = None
+    unit_price_override_gbp: build_optional_decimal_type(10, 4) = None
 
 
 UpdateTenderLineItem = create_partial_model(TenderLineItem)
