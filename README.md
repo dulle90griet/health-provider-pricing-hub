@@ -28,6 +28,7 @@ Remaining before go-live:
 Planned after go-live, to extend the platform beyond its MVP:
 - Service Overview screen: manage a Service and all its Direct and Labour Costs in one place, with two new API routes
 - Personnel and salary record management, feeding into pricing calculations
+- Automated database change audit table
 - Data export as plain CSV
 - Tender export as a formatted PDF
 
