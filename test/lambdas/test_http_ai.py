@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from polyfactory.factories.pydantic_factory import ModelFactory
 
-from hub_api.models.params.sort import SortClause, parse_sort_strings
+from hub_api.models.params.sort import SortClause, _parse_sort_strings
 from hub_api.models.params.whitelist import filter_by_whitelist
 
 from src.lambdas.http_api import (
@@ -800,37 +800,37 @@ class TestHandlersCallExecuteOnce:
 # ══════════════════════════════════════════════════════════════════
 class TestParseSortStrings:
     def test_single_sort_string_parsed_to_single_correct_sortclause(self):
-        assert parse_sort_strings(["test_column"]) == [
+        assert _parse_sort_strings(["test_column"]) == [
             SortClause(column="test_column", direction="ASC")
         ]
-        assert parse_sort_strings(["-another_column_name"]) == [
+        assert _parse_sort_strings(["-another_column_name"]) == [
             SortClause(column="another_column_name", direction="DESC")
         ]
 
     def test_n_sort_strings_parsed_to_n_correct_sortclauses(self):
-        assert parse_sort_strings(
+        assert _parse_sort_strings(
             ["first_column", "-second_column", "third_column"]
         ) == [
             SortClause(column="first_column", direction="ASC"),
             SortClause(column="second_column", direction="DESC"),
             SortClause(column="third_column", direction="ASC"),
         ]
-        assert parse_sort_strings(["-A", "B", "-C"]) == [
+        assert _parse_sort_strings(["-A", "B", "-C"]) == [
             SortClause(column="A", direction="DESC"),
             SortClause(column="B", direction="ASC"),
             SortClause(column="C", direction="DESC"),
         ]
 
     def test_empty_sort_strings_excluded_from_returned_list(self):
-        assert parse_sort_strings([]) == []
-        assert parse_sort_strings(["", "B"]) == [
+        assert _parse_sort_strings([]) == []
+        assert _parse_sort_strings(["", "B"]) == [
             SortClause(column="B", direction="ASC")
         ]
-        assert parse_sort_strings(["A", "", "-C"]) == [
+        assert _parse_sort_strings(["A", "", "-C"]) == [
             SortClause(column="A", direction="ASC"),
             SortClause(column="C", direction="DESC"),
         ]
-        assert parse_sort_strings(["-A", "B", ""]) == [
+        assert _parse_sort_strings(["-A", "B", ""]) == [
             SortClause(column="A", direction="DESC"),
             SortClause(column="B", direction="ASC"),
         ]

@@ -50,9 +50,9 @@ class SortClauses(BaseModel):
                 sort clauses.
         """
         if len(sort_strings) == 1 and isinstance(sort_strings[0], list):
-            kwargs["clauses"] = parse_sort_strings(list(sort_strings[0]))
+            kwargs["clauses"] = _parse_sort_strings(list(sort_strings[0]))
         elif sort_strings:
-            kwargs["clauses"] = parse_sort_strings(list(sort_strings))
+            kwargs["clauses"] = _parse_sort_strings(list(sort_strings))
         super().__init__(**kwargs)
 
     @field_validator("clauses")
@@ -103,7 +103,7 @@ class SortClauses(BaseModel):
         return sort_sql
 
 
-def parse_sort_strings(sort_strings: list[str]) -> list[SortClause]:
+def _parse_sort_strings(sort_strings: list[str]) -> list[SortClause]:
     """
     Parse a list of sort strings in the format ["col1", "-col2", "col3"]
     (where "-" is descending) into a list of SortClause objects.
