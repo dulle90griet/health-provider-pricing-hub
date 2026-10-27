@@ -13,7 +13,7 @@ from pydantic import (
 from pydantic_strict_partial import create_partial_model
 
 import psycopg_pool
-from psycopg.sql import Composable, SQL, Identifier, Placeholder
+from psycopg.sql import SQL, Identifier, Placeholder
 from psycopg.rows import dict_row
 from psycopg.errors import UniqueViolation
 
@@ -29,9 +29,9 @@ from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
 from hub_api.logger import logger
-from hub_api.models import build_optional_decimal_type, build_lax_list_model
-from hub_api.models.params import URIQueries, SortClauses
 from hub_api.exceptions import InvalidParameterError
+from hub_api.models import build_optional_decimal_type, build_lax_list_model
+from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 
 
 # logger = logging.getLogger("logger")
@@ -133,26 +133,26 @@ from hub_api.exceptions import InvalidParameterError
 #     search_string: Annotated[Optional[str], Field(max_length=30)] = None
 
 
-def build_search_sql(
-    search_column: str, search_string: str, whitelist: list[str] = None
-) -> Composable:
-    if not search_column or not search_string:
-        return SQL("")
+# def build_search_sql(
+#     search_column: str, search_string: str, whitelist: list[str] = None
+# ) -> Composable:
+#     if not search_column or not search_string:
+#         return SQL("")
 
-    if whitelist and search_column not in whitelist:
-        raise InvalidParameterError("Provided search column is not whitelisted.")
+#     if whitelist and search_column not in whitelist:
+#         raise InvalidParameterError("Provided search column is not whitelisted.")
 
-    column_parts = search_column.split(".")
-    if len(column_parts) <= 2:
-        search_column_identifier = Identifier(*column_parts)
-    else:
-        raise InvalidParameterError(
-            f"Qualified reference of more than two parts: {search_column}"
-        )
+#     column_parts = search_column.split(".")
+#     if len(column_parts) <= 2:
+#         search_column_identifier = Identifier(*column_parts)
+#     else:
+#         raise InvalidParameterError(
+#             f"Qualified reference of more than two parts: {search_column}"
+#         )
 
-    return SQL("WHERE {} ILIKE {}").format(
-        search_column_identifier, f"%{search_string}%"
-    )
+#     return SQL("WHERE {} ILIKE {}").format(
+#         search_column_identifier, f"%{search_string}%"
+#     )
 
 
 # class SortClause(BaseModel):

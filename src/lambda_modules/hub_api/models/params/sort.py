@@ -2,6 +2,7 @@
 Provides the Pydantic models and helper used to validate
 sort clauses provided by URIQueries
 """
+
 from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 from psycopg.sql import Composable, SQL, Identifier
@@ -15,6 +16,7 @@ class SortClause(BaseModel):
     Pydantic model performing rudimentary validation
     of a single received sort clause
     """
+
     column: str
     direction: Literal["ASC", "DESC"] = "ASC"
 
@@ -24,6 +26,7 @@ class SortClauses(BaseModel):
     Pydantic model validating a list of SortClauses
     and offering whitelist-checked psycopg3 sort SQL generation
     """
+
     clauses: list[SortClause] = Field(default_factory=list)
     whitelist: list[str] = None
 
