@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 WD := $(shell pwd)
-PYTHONPATH := $(wd):$(wd)/src
+PYTHONPATH := $(WD):$(WD)/src:$(WD)/src/lambda_modules
 PYTHON_VERSION := $(shell grep "^requires-python" pyproject.toml | cut -d'"' -f2 | sed 's/>=//')
 PIP = pip
 
@@ -42,8 +42,8 @@ all-checks: audit security-checks code-checks terraform-checks unit-tests
 ## CD layer and code deployment
 
 prepare-reqs-layer:
-	uv export --only-group lambda-layer --output-file requirements-lambda.txt
-	$(PIP) install -r requirements-lambda.txt -t build/lambda-layer/python
+	uv export --only-group reqs-layer --output-file requirements-lambda.txt
+	$(PIP) install -r requirements-lambda.txt -t build/reqs-layer/python --upgrade
 
 prepare-psycopg-layer:
 	uv export --only-group psycopg-layer --output-file requirements-psycopg.txt
@@ -92,7 +92,7 @@ define zip_to_bucket
 	@source .env && aws s3 cp "packages/temp/$(FILENAME).zip" "s3://$(BUCKET)/$(FILENAME)/current.zip"
 endef
 
-deploy-to-dev:
+deploy-to-dev: prepare-reqs-layer prepare-psycopg-layer prepare-api-modules-layer
 	$(eval CODE_BUCKET := $(shell \
 		cat infra/envs/dev/terraform.tfvars | \
 		grep CODE_BUCKET | \
