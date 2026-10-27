@@ -32,6 +32,7 @@ from botocore.exceptions import ClientError
 
 from hub_api.logger import logger
 from hub_api.models import build_optional_decimal_type, build_lax_list_model
+from hub_api.models.params import URIQueries
 
 
 # logger = logging.getLogger("logger")
@@ -126,11 +127,11 @@ def filter_by_whitelist(
 #     ]
 
 
-class URIQueries(BaseModel):
-    page: Optional[int] = 1
-    per_page: Optional[int] = 10
-    search_column: Annotated[Optional[str], Field(max_length=40)] = None
-    search_string: Annotated[Optional[str], Field(max_length=30)] = None
+# class URIQueries(BaseModel):
+#     page: Optional[int] = 1
+#     per_page: Optional[int] = 10
+#     search_column: Annotated[Optional[str], Field(max_length=40)] = None
+#     search_string: Annotated[Optional[str], Field(max_length=30)] = None
 
 
 def build_search_sql(
