@@ -2,7 +2,6 @@ import os
 from decimal import Decimal, InvalidOperation as InvalidDecimalOperation
 from datetime import datetime
 import json
-import logging
 
 from typing import Optional, TypeVar, ClassVar, Type, TypeAlias, Literal
 from typing_extensions import Annotated
@@ -34,9 +33,11 @@ import boto3
 from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
+from api_logger import logger
 
-logger = logging.getLogger("logger")
-logger.setLevel(logging.INFO)
+
+# logger = logging.getLogger("logger")
+# logger.setLevel(logging.INFO)
 
 
 def filter_by_whitelist(
