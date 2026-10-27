@@ -2,6 +2,7 @@ import os
 from decimal import Decimal
 from datetime import datetime
 import json
+from http import HTTPStatus
 
 from typing import Optional, Literal
 from typing_extensions import Annotated
@@ -17,14 +18,12 @@ from psycopg.sql import Composable, SQL, Identifier, Placeholder
 from psycopg.rows import dict_row
 from psycopg.errors import UniqueViolation
 
-from http import HTTPStatus
 from aws_lambda_powertools.event_handler import (
     APIGatewayHttpResolver,
     Response,
     content_types,
 )
 from aws_lambda_powertools.event_handler.openapi.params import Query, Body
-from aws_lambda_powertools.event_handler.exceptions import ServiceError
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
 import boto3
 from botocore.exceptions import ClientError
@@ -422,14 +421,14 @@ app = APIGatewayHttpResolver(
 )
 
 
-class InvalidParameterError(ServiceError):
-    """
-    Raised when the request includes a non-allowed value
-    """
+# class InvalidParameterError(ServiceError):
+#     """
+#     Raised when the request includes a non-allowed value
+#     """
 
-    def __init__(self, message: str) -> None:
-        super().__init__(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, msg=message)
-        # self.loc = loc
+#     def __init__(self, message: str) -> None:
+#         super().__init__(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, msg=message)
+#         # self.loc = loc
 
 
 @app.exception_handler(InvalidParameterError)
