@@ -1,19 +1,19 @@
 data "archive_file" "reqs_layer" {
   type        = "zip"
-  source_dir  = "${path.module}/../build/lambda-layer"
-  output_path = "${path.module}/../packages/layer/lambda_layer.zip"
+  source_dir  = "${path.module}/../build/reqs-layer"
+  output_path = "${path.module}/../packages/layer/reqs_layer.zip"
 }
 
 resource "aws_s3_object" "reqs_layer" {
   bucket     = var.CODE_BUCKET
-  key        = "layers/lambda-layer.zip"
+  key        = "layers/reqs-layer.zip"
   source     = data.archive_file.reqs_layer.output_path
   etag       = data.archive_file.reqs_layer.output_base64sha256
   depends_on = [data.archive_file.reqs_layer]
 }
 
 resource "aws_lambda_layer_version" "reqs_layer" {
-  layer_name       = "${var.PREFIX}-${var.ENVIRONMENT}-lambda-layer"
+  layer_name       = "${var.PREFIX}-${var.ENVIRONMENT}-reqs-layer"
   s3_bucket        = aws_s3_object.reqs_layer.bucket
   s3_key           = aws_s3_object.reqs_layer.key
   source_code_hash = data.archive_file.reqs_layer.output_base64sha256

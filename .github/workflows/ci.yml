@@ -493,7 +493,7 @@ jobs:
           needs.pre-checks.outputs.other_merges == 'true' }}
         run: |
           set +e
-          TF_LOG=DEBUG terraform plan \
+          terraform plan \
             -detailed-exitcode \
             -out=tfplan \
             -var-file="envs/stage/terraform.tfvars"
