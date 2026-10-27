@@ -6,6 +6,7 @@ ORIG="src/lambda_modules"
 DEST="packages/layer"
 OUT_ZIP="api_modules_layer.zip"
 MODULES=(
+    "models"
     "api_logger.py"
 )
 
