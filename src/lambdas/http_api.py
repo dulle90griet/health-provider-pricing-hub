@@ -1,260 +1,259 @@
 import os
-from decimal import Decimal, InvalidOperation as InvalidDecimalOperation
+from decimal import Decimal
 from datetime import datetime
 import json
-import logging
+from http import HTTPStatus
 
-from typing import Optional, TypeVar, ClassVar, Type, TypeAlias, Literal
+from typing import Optional
 from typing_extensions import Annotated
 from pydantic import (
-    RootModel,
     BaseModel,
     Field,
-    BeforeValidator,
-    model_validator,
-    field_validator,
 )
 from pydantic_strict_partial import create_partial_model
 
 import psycopg_pool
-from psycopg.sql import Composable, SQL, Identifier, Placeholder
+from psycopg.sql import SQL, Identifier, Placeholder
 from psycopg.rows import dict_row
 from psycopg.errors import UniqueViolation
 
-from http import HTTPStatus
 from aws_lambda_powertools.event_handler import (
     APIGatewayHttpResolver,
     Response,
     content_types,
 )
 from aws_lambda_powertools.event_handler.openapi.params import Query, Body
-from aws_lambda_powertools.event_handler.exceptions import ServiceError
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
 import boto3
 from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
-
-logger = logging.getLogger("logger")
-logger.setLevel(logging.INFO)
-
-
-def filter_by_whitelist(
-    list_to_filter: list, whitelist: list, mode: str = "strict"
-) -> list:
-    """
-    Check the provided list against the provided whitelist,
-    returning a list containing only accepted values and raising
-    errors for invalid values based on the specified error mode.
-
-    Args:
-        list_to_filter: The list of values to be checked for inclusion
-            in the whitelist. May also be a single non-list value.
-        whitelist: The list of all accepted values.
-        error_mode: If None, no errors are raised. If "lax", an
-            InvalidParameterError is raised only if all values in
-            list_to_filter are invalid. In "strict" mode, an
-            InvalidParameterError is raised if any value is invalid.
-    """
-    if not list_to_filter or not whitelist:
-        return None
-    if not isinstance(list_to_filter, list):
-        list_to_filter = [list_to_filter]
-
-    if mode == "strict":
-        set_to_check = set(list_to_filter)
-        whitelist_set = set(whitelist)
-        if set_to_check <= whitelist_set:
-            return list_to_filter
-        else:
-            raise InvalidParameterError(
-                "Invalid value encountered. For any values to be accepted, only whitelisted values must be provided."
-            )
-    elif mode == "lax":
-        valid_items = []
-        for item in list_to_filter:
-            if item in whitelist:
-                valid_items.append(item)
-
-        if not valid_items:
-            raise InvalidParameterError(
-                "Expected at least one whitelisted value, got none."
-            )
-        return valid_items
-    else:
-        raise ValueError("Invalid mode name.")
+from hub_api.logger import logger
+from hub_api.exceptions import InvalidParameterError
+from hub_api.models import build_optional_decimal_type, build_lax_list_model
+from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 
 
-def empty_to_none(value: str | Decimal | None) -> Decimal | None:
-    """
-    Convert empty strings to None for optional Decimal fields.
-
-    This validator runs before Pydantic's built-in validation,
-    so empty strings are treated as None instead of raising an error.
-
-    Also accepts a string of "-", as a workaround for systems incapable
-    of sending JSON null values.
-    """
-    if value in ("", "-", None):
-        return None
-    if isinstance(value, Decimal):
-        return value
-    if isinstance(value, bool):
-        raise ValueError("Boolean values are not allowed for Decimal fields")
-    try:
-        return Decimal(value)
-    except (InvalidDecimalOperation, TypeError) as e:
-        raise ValueError(f"Invalid decimal value: {value}") from e
+# logger = logging.getLogger("logger")
+# logger.setLevel(logging.INFO)
 
 
-def OptionalDecimal(max_digits: int, decimal_places: int) -> TypeAlias:
-    """
-    Create an Optional Decimal type with empty string handling and constraints.
+# def filter_by_whitelist(
+#     list_to_filter: list, whitelist: list, mode: str = "strict"
+# ) -> list:
+#     """
+#     Check the provided list against the provided whitelist,
+#     returning a list containing only accepted values and raising
+#     errors for invalid values based on the specified error mode.
 
-    Args:
-        max_digits: Maximum total number of digits
-        decimal_places: Maximum number of decimal places
+#     Args:
+#         list_to_filter: The list of values to be checked for inclusion
+#             in the whitelist. May also be a single non-list value.
+#         whitelist: The list of all accepted values.
+#         error_mode: If None, no errors are raised. If "lax", an
+#             InvalidParameterError is raised only if all values in
+#             list_to_filter are invalid. In "strict" mode, an
+#             InvalidParameterError is raised if any value is invalid.
+#     """
+#     if not list_to_filter or not whitelist:
+#         return None
+#     if not isinstance(list_to_filter, list):
+#         list_to_filter = [list_to_filter]
 
-    Returns:
-        A type alias that can be used in Pydantic models
-    """
-    return Annotated[
-        None
-        | Annotated[
-            Decimal, Field(max_digits=max_digits, decimal_places=decimal_places)
-        ],
-        BeforeValidator(empty_to_none),
-    ]
+#     if mode == "strict":
+#         set_to_check = set(list_to_filter)
+#         whitelist_set = set(whitelist)
+#         if set_to_check <= whitelist_set:
+#             return list_to_filter
+#         else:
+#             raise InvalidParameterError(
+#                 "Invalid value encountered. For any values to be accepted, only whitelisted values must be provided."
+#             )
+#     elif mode == "lax":
+#         valid_items = []
+#         for item in list_to_filter:
+#             if item in whitelist:
+#                 valid_items.append(item)
 
-
-class URIQueries(BaseModel):
-    page: Optional[int] = 1
-    per_page: Optional[int] = 10
-    search_column: Annotated[Optional[str], Field(max_length=40)] = None
-    search_string: Annotated[Optional[str], Field(max_length=30)] = None
-
-
-def build_search_sql(
-    search_column: str, search_string: str, whitelist: list[str] = None
-) -> Composable:
-    if not search_column or not search_string:
-        return SQL("")
-
-    if whitelist and search_column not in whitelist:
-        raise InvalidParameterError("Provided search column is not whitelisted.")
-
-    column_parts = search_column.split(".")
-    if len(column_parts) <= 2:
-        search_column_identifier = Identifier(*column_parts)
-    else:
-        raise InvalidParameterError(
-            f"Qualified reference of more than two parts: {search_column}"
-        )
-
-    return SQL("WHERE {} ILIKE {}").format(
-        search_column_identifier, f"%{search_string}%"
-    )
+#         if not valid_items:
+#             raise InvalidParameterError(
+#                 "Expected at least one whitelisted value, got none."
+#             )
+#         return valid_items
+#     else:
+#         raise ValueError("Invalid mode name.")
 
 
-class SortClause(BaseModel):
-    column: str
-    direction: Literal["ASC", "DESC"] = "ASC"
+# def empty_to_none(value: str | Decimal | None) -> Decimal | None:
+#     """
+#     Convert empty strings to None for optional Decimal fields.
+
+#     This validator runs before Pydantic's built-in validation,
+#     so empty strings are treated as None instead of raising an error.
+
+#     Also accepts a string of "-", as a workaround for systems incapable
+#     of sending JSON null values.
+#     """
+#     if value in ("", "-", None):
+#         return None
+#     if isinstance(value, Decimal):
+#         return value
+#     if isinstance(value, bool):
+#         raise ValueError("Boolean values are not allowed for Decimal fields")
+#     try:
+#         return Decimal(value)
+#     except (InvalidDecimalOperation, TypeError) as e:
+#         raise ValueError(f"Invalid decimal value: {value}") from e
 
 
-class SortClauses(BaseModel):
-    clauses: list[SortClause] = Field(default_factory=list)
-    whitelist: list[str] = None
+# def OptionalDecimal(max_digits: int, decimal_places: int) -> TypeAlias:
+#     """
+#     Create an Optional Decimal type with empty string handling and constraints.
 
-    def __init__(self, *sort_strings, **kwargs):
-        """
-        Initialize SortClauses from either SortClause objects
-        or sort strings.
+#     Args:
+#         max_digits: Maximum total number of digits
+#         decimal_places: Maximum number of decimal places
 
-        Supports multiple invocation styles:
-        - From existing SortClause objects:
-            SortClauses(clauses=[...])
-        - From individual sort strings:
-            SortClauses("-service_id", "title_engaged")
-        - From a list of sort strings:
-            SortClauses(["-service_id", "title_engaged"])
-
-        The keyword argument `whitelist` is compatible with all styles.
-
-        Raises:
-            ValueError: If duplicate columns are detected in the
-                sort clauses.
-        """
-        if len(sort_strings) == 1 and isinstance(sort_strings[0], list):
-            kwargs["clauses"] = parse_sort_strings(list(sort_strings[0]))
-        elif sort_strings:
-            kwargs["clauses"] = parse_sort_strings(list(sort_strings))
-        super().__init__(**kwargs)
-
-    @field_validator("clauses")
-    @classmethod
-    def validate_no_duplicates(cls, value: list[SortClause]) -> list[SortClause]:
-        """Confirm the provided list features each column at most once."""
-        columns = [c.column for c in value]
-        if len(columns) != len(set(columns)):
-            raise ValueError("Duplicate sort column provided")
-        return value
-
-    def to_sql(self) -> Composable | Literal[""]:
-        """
-        Build a single- or multi-level ORDER BY clause
-        using the contents of the SortClause object's `clauses` list.
-
-        Returns "" if `clauses` is empty or contains columns
-        not present in the provided whitelist.
-        """
-        if not self.clauses:
-            return ""
-
-        # Proceed only if all provided sort columns are whitelisted
-        if self.whitelist:
-            if not filter_by_whitelist(
-                [c.column for c in self.clauses], self.whitelist, mode="strict"
-            ):
-                return ""
-
-        sort_parts = []
-        for c in self.clauses:
-            column_parts = c.column.split(".")
-            if len(column_parts) <= 2:
-                sort_column = Identifier(*column_parts)
-            else:
-                raise InvalidParameterError(
-                    f"Qualified reference of more than two parts: {c.column}"
-                )
-
-            # # DEPRECATED -- CHECK PERFORMED BY PYDANTIC (SEE SORTCLAUSE MODEL)
-            # if c.direction.upper() not in ("ASC", "DESC"):
-            #     raise InvalidParameterError(f"Invalid order: {c.direction}")
-
-            sort_part = sort_column + SQL(f" {c.direction.upper()}")
-            sort_parts.append(sort_part)
-
-        sort_sql = SQL("ORDER BY ") + SQL(", ").join(sort_parts)
-        return sort_sql
+#     Returns:
+#         A type alias that can be used in Pydantic models
+#     """
+#     return Annotated[
+#         None
+#         | Annotated[
+#             Decimal, Field(max_digits=max_digits, decimal_places=decimal_places)
+#         ],
+#         BeforeValidator(empty_to_none),
+#     ]
 
 
-def parse_sort_strings(sort_strings: list[str]) -> list[SortClause]:
-    """
-    Parse a list of sort strings in the format ["col1", "-col2", "col3"]
-    (where "-" is descending) into a list of SortClause objects.
-    """
-    if not sort_strings:
-        return []
+# class URIQueries(BaseModel):
+#     page: Optional[int] = 1
+#     per_page: Optional[int] = 10
+#     search_column: Annotated[Optional[str], Field(max_length=40)] = None
+#     search_string: Annotated[Optional[str], Field(max_length=30)] = None
 
-    clauses = []
-    for sort_string in sort_strings:
-        if not sort_string:
-            continue
-        if sort_string[0] == "-" and len(sort_string) >= 2:
-            clauses.append(SortClause(column=sort_string[1:], direction="DESC"))
-        else:
-            clauses.append(SortClause(column=sort_string, direction="ASC"))
-    return clauses
+
+# def build_search_sql(
+#     search_column: str, search_string: str, whitelist: list[str] = None
+# ) -> Composable:
+#     if not search_column or not search_string:
+#         return SQL("")
+
+#     if whitelist and search_column not in whitelist:
+#         raise InvalidParameterError("Provided search column is not whitelisted.")
+
+#     column_parts = search_column.split(".")
+#     if len(column_parts) <= 2:
+#         search_column_identifier = Identifier(*column_parts)
+#     else:
+#         raise InvalidParameterError(
+#             f"Qualified reference of more than two parts: {search_column}"
+#         )
+
+#     return SQL("WHERE {} ILIKE {}").format(
+#         search_column_identifier, f"%{search_string}%"
+#     )
+
+
+# class SortClause(BaseModel):
+#     column: str
+#     direction: Literal["ASC", "DESC"] = "ASC"
+
+
+# class SortClauses(BaseModel):
+#     clauses: list[SortClause] = Field(default_factory=list)
+#     whitelist: list[str] = None
+
+#     def __init__(self, *sort_strings, **kwargs):
+#         """
+#         Initialize SortClauses from either SortClause objects
+#         or sort strings.
+
+#         Supports multiple invocation styles:
+#         - From existing SortClause objects:
+#             SortClauses(clauses=[...])
+#         - From individual sort strings:
+#             SortClauses("-service_id", "title_engaged")
+#         - From a list of sort strings:
+#             SortClauses(["-service_id", "title_engaged"])
+
+#         The keyword argument `whitelist` is compatible with all styles.
+
+#         Raises:
+#             ValueError: If duplicate columns are detected in the
+#                 sort clauses.
+#         """
+#         if len(sort_strings) == 1 and isinstance(sort_strings[0], list):
+#             kwargs["clauses"] = parse_sort_strings(list(sort_strings[0]))
+#         elif sort_strings:
+#             kwargs["clauses"] = parse_sort_strings(list(sort_strings))
+#         super().__init__(**kwargs)
+
+#     @field_validator("clauses")
+#     @classmethod
+#     def validate_no_duplicates(cls, value: list[SortClause]) -> list[SortClause]:
+#         """Confirm the provided list features each column at most once."""
+#         columns = [c.column for c in value]
+#         if len(columns) != len(set(columns)):
+#             raise ValueError("Duplicate sort column provided")
+#         return value
+
+#     def to_sql(self) -> Composable | Literal[""]:
+#         """
+#         Build a single- or multi-level ORDER BY clause
+#         using the contents of the SortClause object's `clauses` list.
+
+#         Returns "" if `clauses` is empty or contains columns
+#         not present in the provided whitelist.
+#         """
+#         if not self.clauses:
+#             return ""
+
+#         # Proceed only if all provided sort columns are whitelisted
+#         if self.whitelist:
+#             if not filter_by_whitelist(
+#                 [c.column for c in self.clauses], self.whitelist, mode="strict"
+#             ):
+#                 return ""
+
+#         sort_parts = []
+#         for c in self.clauses:
+#             column_parts = c.column.split(".")
+#             if len(column_parts) <= 2:
+#                 sort_column = Identifier(*column_parts)
+#             else:
+#                 raise InvalidParameterError(
+#                     f"Qualified reference of more than two parts: {c.column}"
+#                 )
+
+#             # # DEPRECATED -- CHECK PERFORMED BY PYDANTIC (SEE SORTCLAUSE MODEL)
+#             # if c.direction.upper() not in ("ASC", "DESC"):
+#             #     raise InvalidParameterError(f"Invalid order: {c.direction}")
+
+#             sort_part = sort_column + SQL(f" {c.direction.upper()}")
+#             sort_parts.append(sort_part)
+
+#         sort_sql = SQL("ORDER BY ") + SQL(", ").join(sort_parts)
+#         return sort_sql
+
+
+# def parse_sort_strings(sort_strings: list[str]) -> list[SortClause]:
+#     """
+#     Parse a list of sort strings in the format ["col1", "-col2", "col3"]
+#     (where "-" is descending) into a list of SortClause objects.
+#     """
+#     if not sort_strings:
+#         return []
+
+#     clauses = []
+#     for sort_string in sort_strings:
+#         if not sort_string:
+#             continue
+#         if sort_string[0] == "-" and len(sort_string) >= 2:
+#             clauses.append(SortClause(column=sort_string[1:], direction="DESC"))
+#         else:
+#             clauses.append(SortClause(column=sort_string, direction="ASC"))
+#     return clauses
 
 
 # class Department(BaseModel):
@@ -268,9 +267,9 @@ class JobTitle(BaseModel):
     default_ft_weekly_hours: Annotated[Decimal, Field(max_digits=3, decimal_places=1)]
     default_lunch_break_mins: Annotated[int, Field(ge=0, le=240)]
     hourly_rate_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
-    default_annual_holiday_days: OptionalDecimal(3, 1) = None
-    default_annual_training_days: OptionalDecimal(3, 1) = None
-    default_annual_sick_days: OptionalDecimal(3, 1) = None
+    default_annual_holiday_days: build_optional_decimal_type(3, 1) = None
+    default_annual_training_days: build_optional_decimal_type(3, 1) = None
+    default_annual_sick_days: build_optional_decimal_type(3, 1) = None
 
 
 UpdateJobTitle = create_partial_model(JobTitle)
@@ -278,7 +277,7 @@ UpdateJobTitle = create_partial_model(JobTitle)
 
 class Consumable(BaseModel):
     consumable_name: Annotated[str, Field(max_length=100)]
-    default_unit_cost_gbp: OptionalDecimal(8, 4) = None
+    default_unit_cost_gbp: build_optional_decimal_type(8, 4) = None
 
 
 UpdateConsumable = create_partial_model(Consumable)
@@ -301,8 +300,8 @@ class Service(BaseModel):
     our_current_unit_price_gbp: Annotated[
         Decimal, Field(max_digits=10, decimal_places=4)
     ]
-    new_unit_price_gbp: OptionalDecimal(10, 4) = None
-    new_day_rate_gbp: OptionalDecimal(10, 4) = None
+    new_unit_price_gbp: build_optional_decimal_type(10, 4) = None
+    new_day_rate_gbp: build_optional_decimal_type(10, 4) = None
     comments: Optional[Annotated[str, Field(max_length=100)]] = None
 
 
@@ -357,38 +356,38 @@ class TenderLineItem(BaseModel):
     tender_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     total_number_pa: Annotated[int, Field(ge=0, le=2**31 - 1)]
-    unit_price_override_gbp: OptionalDecimal(10, 4) = None
+    unit_price_override_gbp: build_optional_decimal_type(10, 4) = None
 
 
 UpdateTenderLineItem = create_partial_model(TenderLineItem)
 
 
-T = TypeVar("T", bound="BaseModel")
+# T = TypeVar("T", bound="BaseModel")
 
 
-def create_lax_list_model(model: Type[T]) -> Type[RootModel[list[T]]]:
-    """
-    Factory function: creates a RootModel that coerces a single dict
-    into a list of dicts for *model*.
-    """
+# def build_lax_list_model(model: Type[T]) -> Type[RootModel[list[T]]]:
+#     """
+#     Factory function: creates a RootModel that coerces a single dict
+#     into a list of dicts for *model*.
+#     """
 
-    class LaxList(RootModel[list[model]]):
-        item_model: ClassVar[type] = model
+#     class LaxList(RootModel[list[model]]):
+#         item_model: ClassVar[type] = model
 
-        @model_validator(mode="before")
-        @classmethod
-        def coerce_single(cls, values):
-            return [values] if isinstance(values, dict) else values
+#         @model_validator(mode="before")
+#         @classmethod
+#         def coerce_single(cls, values):
+#             return [values] if isinstance(values, dict) else values
 
-        @model_validator(mode="after")
-        def check_not_empty(self):
-            if len(self.root) == 0:
-                raise ValueError("at least one row object required")
-            return self
+#         @model_validator(mode="after")
+#         def check_not_empty(self):
+#             if len(self.root) == 0:
+#                 raise ValueError("at least one row object required")
+#             return self
 
-    LaxList.__name__ = f"{model.__name__}List"
-    LaxList.__module__ = model.__module__
-    return LaxList
+#     LaxList.__name__ = f"{model.__name__}List"
+#     LaxList.__module__ = model.__module__
+#     return LaxList
 
 
 models_for_lax_list = [
@@ -402,7 +401,7 @@ models_for_lax_list = [
     Tender,
     TenderLineItem,
 ]
-lax_lists = {model: create_lax_list_model(model) for model in models_for_lax_list}
+lax_lists = {model: build_lax_list_model(model) for model in models_for_lax_list}
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -422,14 +421,14 @@ app = APIGatewayHttpResolver(
 )
 
 
-class InvalidParameterError(ServiceError):
-    """
-    Raised when the request includes a non-allowed value
-    """
+# class InvalidParameterError(ServiceError):
+#     """
+#     Raised when the request includes a non-allowed value
+#     """
 
-    def __init__(self, message: str) -> None:
-        super().__init__(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, msg=message)
-        # self.loc = loc
+#     def __init__(self, message: str) -> None:
+#         super().__init__(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, msg=message)
+#         # self.loc = loc
 
 
 @app.exception_handler(InvalidParameterError)

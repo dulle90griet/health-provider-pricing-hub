@@ -352,8 +352,9 @@ jobs:
 
       - name: Prepare Lambda layers
         run: |
-          make prepare-lambda-layer
+          make prepare-reqs-layer
           make prepare-psycopg-layer
+          make prepare-api-modules-layer
 
       - name: Configure AWS credentials
         id: configure-aws
