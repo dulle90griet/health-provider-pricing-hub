@@ -8,6 +8,7 @@ OUT_ZIP="api_modules_layer.zip"
 MODULES=(
     "models"
     "api_logger.py"
+    "lax_list.py"
 )
 
 # make temp dir and store its address

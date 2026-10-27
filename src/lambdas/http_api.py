@@ -3,13 +3,11 @@ from decimal import Decimal
 from datetime import datetime
 import json
 
-from typing import Optional, TypeVar, ClassVar, Type, Literal
+from typing import Optional, Literal
 from typing_extensions import Annotated
 from pydantic import (
-    RootModel,
     BaseModel,
     Field,
-    model_validator,
     field_validator,
 )
 from pydantic_strict_partial import create_partial_model
@@ -33,7 +31,7 @@ from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
 from api_logger import logger
-from models import build_optional_decimal_type
+from models import build_optional_decimal_type, build_lax_list_model
 
 
 # logger = logging.getLogger("logger")
@@ -364,32 +362,32 @@ class TenderLineItem(BaseModel):
 UpdateTenderLineItem = create_partial_model(TenderLineItem)
 
 
-T = TypeVar("T", bound="BaseModel")
+# T = TypeVar("T", bound="BaseModel")
 
 
-def create_lax_list_model(model: Type[T]) -> Type[RootModel[list[T]]]:
-    """
-    Factory function: creates a RootModel that coerces a single dict
-    into a list of dicts for *model*.
-    """
+# def build_lax_list_model(model: Type[T]) -> Type[RootModel[list[T]]]:
+#     """
+#     Factory function: creates a RootModel that coerces a single dict
+#     into a list of dicts for *model*.
+#     """
 
-    class LaxList(RootModel[list[model]]):
-        item_model: ClassVar[type] = model
+#     class LaxList(RootModel[list[model]]):
+#         item_model: ClassVar[type] = model
 
-        @model_validator(mode="before")
-        @classmethod
-        def coerce_single(cls, values):
-            return [values] if isinstance(values, dict) else values
+#         @model_validator(mode="before")
+#         @classmethod
+#         def coerce_single(cls, values):
+#             return [values] if isinstance(values, dict) else values
 
-        @model_validator(mode="after")
-        def check_not_empty(self):
-            if len(self.root) == 0:
-                raise ValueError("at least one row object required")
-            return self
+#         @model_validator(mode="after")
+#         def check_not_empty(self):
+#             if len(self.root) == 0:
+#                 raise ValueError("at least one row object required")
+#             return self
 
-    LaxList.__name__ = f"{model.__name__}List"
-    LaxList.__module__ = model.__module__
-    return LaxList
+#     LaxList.__name__ = f"{model.__name__}List"
+#     LaxList.__module__ = model.__module__
+#     return LaxList
 
 
 models_for_lax_list = [
@@ -403,7 +401,7 @@ models_for_lax_list = [
     Tender,
     TenderLineItem,
 ]
-lax_lists = {model: create_lax_list_model(model) for model in models_for_lax_list}
+lax_lists = {model: build_lax_list_model(model) for model in models_for_lax_list}
 
 
 class CustomJSONEncoder(json.JSONEncoder):
