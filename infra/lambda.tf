@@ -40,6 +40,20 @@ resource "aws_lambda_layer_version" "psycopg_layer" {
   source_code_hash = data.archive_file.psycopg_layer.output_base64sha256
 }
 
+resource "aws_s3_object" "api_modules_layer" {
+  bucket = var.CODE_BUCKET
+  key    = "layers/api_modules_layer.zip"
+  source = "${path.module}/../packages/layer/api_modules_layer.zip"
+  etag   = filebase64sha256("${path.module}/../packages/layer/api_modules_layer.zip")
+}
+
+resource "aws_lambda_layer_version" "api_modules_layer" {
+  layer_name       = "${var.PREFIX}-${var.ENVIRONMENT}-api-modules-layer"
+  s3_bucket        = aws_s3_object.api_modules_layer.bucket
+  s3_key           = aws_s3_object.api_modules_layer.key
+  source_code_hash = filebase64sha256("${path.module}/../packages/layer/api_modules_layer.zip")
+}
+
 # data "archive_file" "create_instance_lambda_code" {
 #   type        = "zip"
 #   source_file = "${path.module}/../src/lambdas/create_budibase_instance.py"
@@ -174,6 +188,7 @@ resource "aws_lambda_function" "http_api_lambda" {
   layers = [
     aws_lambda_layer_version.reqs_layer.arn,
     aws_lambda_layer_version.psycopg_layer.arn,
+    aws_lambda_layer_version.api_modules_layer.arn,
     var.LAMBDA_POWERTOOLS_LAYER_ARN,
   ]
 
