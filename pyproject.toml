@@ -23,14 +23,15 @@ audit = [
 audit-fixes = [
     "certifi>=2026.10.19",  # Required by 'requests'
     "cryptography>=50.0.0",
+    "filelock>=4.2.1",  # Used by 'filecache' (-> 'pip-audit')
     "idna>=3.15",   # Required by 'requests'
-    "msgpack>=1.2.1", # Required by 'cachecontrol' (-> 'pip-audit')
+    "msgpack>=1.2.3", # Required by 'cachecontrol' (-> 'pip-audit')
     "pygments>=2.20.0",
     "requests>=2.33.0", # Required by 'moto', 'pip-audit', others
     "urllib3>=2.8.0", # Required by 'botocore' (->'boto3'), 'requests', others
     "werkzeug>=3.1.9", # Required by 'moto'
 ]
-lambda-layer = [
+reqs-layer = [
     "pydantic-strict-partial>=1.0.0",
 ]
 psycopg-layer = [
@@ -40,7 +41,7 @@ local-dev = [
     {include-group = "dev"},
     {include-group = "audit"},
     {include-group = "audit-fixes"},
-    {include-group = "lambda-layer"},
+    {include-group = "reqs-layer"},
     {include-group = "psycopg-layer"},
 ]
 
