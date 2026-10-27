@@ -41,7 +41,7 @@ all-checks: audit security-checks code-checks terraform-checks unit-tests
 ###############################################################################
 ## CD layer and code deployment
 
-prepare-lambda-layer:
+prepare-reqs-layer:
 	uv export --only-group lambda-layer --output-file requirements-lambda.txt
 	$(PIP) install -r requirements-lambda.txt -t build/lambda-layer/python
 
@@ -56,6 +56,9 @@ prepare-psycopg-layer:
 		--only-binary=:all: \
 		--upgrade \
 		--no-deps
+
+prepare-api-modules-layer:
+	scripts/build_api_modules_layer.sh
 
 # Check that env exists and required vars are set
 # .env-check:
