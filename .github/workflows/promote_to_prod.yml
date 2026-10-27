@@ -116,14 +116,14 @@ jobs:
           echo "Deployment created with ID: $DEPLOYMENT_ID"
 
       - name: Prepare Lambda layers
-        id: prepare-lambda-layers
+        id: prepare-reqs-layers
         run: |
           # This currently fudges things by simply relying
           # on the UV lock file in use when the manifest commit passed its tests
 
           git checkout ${{ inputs.manifest_sha }}
 
-          make prepare-lambda-layer
+          make prepare-reqs-layer
           make prepare-psycopg-layer
 
       - name: Promote Lambda code
