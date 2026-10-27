@@ -354,6 +354,7 @@ jobs:
         run: |
           make prepare-reqs-layer
           make prepare-psycopg-layer
+          make prepare-api-modules-layer
 
       - name: Configure AWS credentials
         id: configure-aws

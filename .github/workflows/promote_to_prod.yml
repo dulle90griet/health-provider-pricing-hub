@@ -125,6 +125,7 @@ jobs:
 
           make prepare-reqs-layer
           make prepare-psycopg-layer
+          make prepare-api-modules-layer
 
       - name: Promote Lambda code
         id: promote-lambda-code

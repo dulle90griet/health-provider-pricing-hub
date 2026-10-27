@@ -19,6 +19,7 @@ jobs:
         run: |
           make prepare-reqs-layer
           make prepare-psycopg-layer
+          make prepare-api-modules-layer
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.2.3
