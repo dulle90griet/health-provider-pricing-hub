@@ -32,6 +32,7 @@ from hub_api.logger import logger
 from hub_api.exceptions import InvalidParameterError
 from hub_api.models import build_optional_decimal_type, build_lax_list_model
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
+from hub_api.models.requests import JobTitle, UpdateJobTitle
 
 
 # logger = logging.getLogger("logger")
@@ -261,18 +262,18 @@ from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 #     name: Annotated[str, Field(max_length=50)]
 
 
-class JobTitle(BaseModel):
-    department_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    title: Annotated[str, Field(max_length=50)]
-    default_ft_weekly_hours: Annotated[Decimal, Field(max_digits=3, decimal_places=1)]
-    default_lunch_break_mins: Annotated[int, Field(ge=0, le=240)]
-    hourly_rate_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
-    default_annual_holiday_days: build_optional_decimal_type(3, 1) = None
-    default_annual_training_days: build_optional_decimal_type(3, 1) = None
-    default_annual_sick_days: build_optional_decimal_type(3, 1) = None
+# class JobTitle(BaseModel):
+#     department_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     title: Annotated[str, Field(max_length=50)]
+#     default_ft_weekly_hours: Annotated[Decimal, Field(max_digits=3, decimal_places=1)]
+#     default_lunch_break_mins: Annotated[int, Field(ge=0, le=240)]
+#     hourly_rate_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
+#     default_annual_holiday_days: build_optional_decimal_type(3, 1) = None
+#     default_annual_training_days: build_optional_decimal_type(3, 1) = None
+#     default_annual_sick_days: build_optional_decimal_type(3, 1) = None
 
 
-UpdateJobTitle = create_partial_model(JobTitle)
+# UpdateJobTitle = create_partial_model(JobTitle)
 
 
 class Consumable(BaseModel):

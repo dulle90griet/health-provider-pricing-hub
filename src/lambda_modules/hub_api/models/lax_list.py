@@ -1,6 +1,7 @@
 """
 LaxList RootModel factory, allowing Pydantic validation
-of model and list[model] alike"""
+of model and list[model] alike
+"""
 
 from typing import TypeVar, ClassVar, Type
 from pydantic import BaseModel, RootModel, model_validator
