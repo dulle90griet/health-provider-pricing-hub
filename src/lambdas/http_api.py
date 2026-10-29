@@ -5,11 +5,6 @@ import json
 from http import HTTPStatus
 
 from typing_extensions import Annotated
-from pydantic import (
-    BaseModel,
-    Field,
-)
-from pydantic_strict_partial import create_partial_model
 
 import psycopg_pool
 from psycopg.sql import SQL, Identifier, Placeholder
@@ -29,7 +24,7 @@ from botocore.exceptions import ClientError
 
 from hub_api.logger import logger
 from hub_api.exceptions import InvalidParameterError
-from hub_api.models import build_optional_decimal_type, build_lax_list_model
+from hub_api.models import build_lax_list_model
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 from hub_api.models.requests import (
     Client,
@@ -40,6 +35,7 @@ from hub_api.models.requests import (
     OverheadCost,
     Service,
     Tender,
+    TenderLineItem,
     UpdateClient,
     UpdateConsumable,
     UpdateDirectCost,
@@ -48,6 +44,7 @@ from hub_api.models.requests import (
     UpdateOverheadCost,
     UpdateService,
     UpdateTender,
+    UpdateTenderLineItem,
 )
 
 
@@ -369,14 +366,14 @@ from hub_api.models.requests import (
 # UpdateTender = create_partial_model(Tender)
 
 
-class TenderLineItem(BaseModel):
-    tender_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    total_number_pa: Annotated[int, Field(ge=0, le=2**31 - 1)]
-    unit_price_override_gbp: build_optional_decimal_type(10, 4) = None
+# class TenderLineItem(BaseModel):
+#     tender_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     total_number_pa: Annotated[int, Field(ge=0, le=2**31 - 1)]
+#     unit_price_override_gbp: build_optional_decimal_type(10, 4) = None
 
 
-UpdateTenderLineItem = create_partial_model(TenderLineItem)
+# UpdateTenderLineItem = create_partial_model(TenderLineItem)
 
 
 # T = TypeVar("T", bound="BaseModel")
