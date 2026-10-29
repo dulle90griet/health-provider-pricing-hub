@@ -19,6 +19,17 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 from hub_api.models.params.sort import SortClause, _parse_sort_strings
 from hub_api.models.params.whitelist import filter_by_whitelist
 from hub_api.models.optional_decimal import OptionalDecimal
+from hub_api.models.requests import (
+    JobTitle,
+    Consumable,
+    Service,
+    OverheadCost,
+    LabourCost,
+    DirectCost,
+    Client,
+    Tender,
+    TenderLineItem,
+)
 
 from src.lambdas.http_api import (
     logger,
@@ -32,25 +43,24 @@ from src.lambdas.http_api import (
     SortClauses,
     CustomJSONEncoder,
     # Department,
-    JobTitle,
+    JobTitleLaxList,
     UpdateJobTitle,
-    Consumable,
+    ConsumableLaxList,
     UpdateConsumable,
-    Service,
+    ServiceLaxList,
     UpdateService,
-    OverheadCost,
+    OverheadCostLaxList,
     UpdateOverheadCost,
-    LabourCost,
+    LabourCostLaxList,
     UpdateLabourCost,
-    DirectCost,
+    DirectCostLaxList,
     UpdateDirectCost,
-    Client,
+    ClientLaxList,
     UpdateClient,
-    Tender,
+    TenderLaxList,
     UpdateTender,
-    TenderLineItem,
+    TenderLineItemLaxList,
     UpdateTenderLineItem,
-    lax_lists,
     get_department,
     get_job_title,
     get_job_title_titles,
@@ -196,7 +206,7 @@ ALL_POST_HANDLERS = [
     (
         post_job_title,
         "/job-title",
-        lax_lists[JobTitle](
+        JobTitleLaxList(
             {
                 "department_id": 1,
                 "title": "Dev",
@@ -212,14 +222,14 @@ ALL_POST_HANDLERS = [
     (
         post_consumable,
         "/consumable",
-        lax_lists[Consumable](
+        ConsumableLaxList(
             {"consumable_name": "Widget", "default_unit_cost_gbp": Decimal("9.99")}
         ),
     ),
     (
         post_service,
         "/service",
-        lax_lists[Service](
+        ServiceLaxList(
             {
                 "pillar": "Tech",
                 "category": "Dev",
@@ -238,7 +248,7 @@ ALL_POST_HANDLERS = [
     (
         post_overhead_cost,
         "/overhead-cost",
-        lax_lists[OverheadCost](
+        OverheadCostLaxList(
             {
                 "cost_type": "Rent",
                 "cost_description": "Office",
@@ -249,26 +259,26 @@ ALL_POST_HANDLERS = [
     (
         post_labour_cost,
         "/labour-cost",
-        lax_lists[LabourCost](
+        LabourCostLaxList(
             {"service_id": 1, "title_engaged_id": 2, "required_time_mins": 30}
         ),
     ),
     (
         post_direct_cost,
         "/direct-cost",
-        lax_lists[DirectCost](
+        DirectCostLaxList(
             {"service_id": 1, "consumable_id": 2, "cost_gbp": Decimal("12.50")}
         ),
     ),
     (
         post_client,
         "/client",
-        lax_lists[Client]({"client_name": "Acme Corp"}),
+        ClientLaxList({"client_name": "Acme Corp"}),
     ),
     (
         post_tender,
         "/tender",
-        lax_lists[Tender](
+        TenderLaxList(
             {
                 "tender_title": "Big Project",
                 "client_id": 1,
@@ -280,7 +290,7 @@ ALL_POST_HANDLERS = [
     (
         post_tender_line_items,
         "/tender/line-items",
-        lax_lists[TenderLineItem](
+        TenderLineItemLaxList(
             {
                 "tender_id": 1,
                 "service_id": 2,
@@ -1339,7 +1349,7 @@ class TestPostHandlersSQLReflectsParams:
         "body, expected_params",
         [
             (
-                lax_lists[JobTitle](
+                JobTitleLaxList(
                     {
                         "department_id": 1,
                         "title": "Dev",
@@ -1363,7 +1373,7 @@ class TestPostHandlersSQLReflectsParams:
                 ],
             ),
             (
-                lax_lists[JobTitle](
+                JobTitleLaxList(
                     {
                         "department_id": 2,
                         "title": "QA",
@@ -1397,7 +1407,7 @@ class TestPostHandlersSQLReflectsParams:
         "body, expected_params",
         [
             (
-                lax_lists[Consumable](
+                ConsumableLaxList(
                     {
                         "consumable_name": "Widget",
                         "default_unit_cost_gbp": Decimal("9.99"),
@@ -1406,7 +1416,7 @@ class TestPostHandlersSQLReflectsParams:
                 ["Widget", Decimal("9.99")],
             ),
             (
-                lax_lists[Consumable](
+                ConsumableLaxList(
                     {"consumable_name": "Gadget", "default_unit_cost_gbp": None}
                 ),
                 ["Gadget", None],
@@ -1422,7 +1432,7 @@ class TestPostHandlersSQLReflectsParams:
         "body, expected_params",
         [
             (
-                lax_lists[Service](
+                ServiceLaxList(
                     {
                         "pillar": "Tech",
                         "category": "Dev",
@@ -1452,7 +1462,7 @@ class TestPostHandlersSQLReflectsParams:
                 ],
             ),
             (
-                lax_lists[Service](
+                ServiceLaxList(
                     {
                         "pillar": "Ops",
                         "category": "Support",
@@ -1492,7 +1502,7 @@ class TestPostHandlersSQLReflectsParams:
         "body, expected_params",
         [
             (
-                lax_lists[OverheadCost](
+                OverheadCostLaxList(
                     {
                         "cost_type": "Rent",
                         "cost_description": "Office",
@@ -1502,7 +1512,7 @@ class TestPostHandlersSQLReflectsParams:
                 ["Rent", "Office", 12000],
             ),
             (
-                lax_lists[OverheadCost](
+                OverheadCostLaxList(
                     {
                         "cost_type": "Utilities",
                         "cost_description": "Electricity Costs (Lighting 2)",
@@ -1522,13 +1532,13 @@ class TestPostHandlersSQLReflectsParams:
         "body, expected_params",
         [
             (
-                lax_lists[LabourCost](
+                LabourCostLaxList(
                     {"service_id": 1, "title_engaged_id": 2, "required_time_mins": 30}
                 ),
                 [1, 2, 30],
             ),
             (
-                lax_lists[LabourCost](
+                LabourCostLaxList(
                     {"service_id": 10, "title_engaged_id": 20, "required_time_mins": 45}
                 ),
                 [10, 20, 45],
@@ -1544,13 +1554,13 @@ class TestPostHandlersSQLReflectsParams:
         "body, expected_params",
         [
             (
-                lax_lists[DirectCost](
+                DirectCostLaxList(
                     {"service_id": 1, "consumable_id": 2, "cost_gbp": Decimal("12.50")}
                 ),
                 [1, 2, Decimal("12.50")],
             ),
             (
-                lax_lists[DirectCost](
+                DirectCostLaxList(
                     {"service_id": 5, "consumable_id": 8, "cost_gbp": "999.99"}
                 ),
                 [5, 8, Decimal("999.99")],
@@ -1565,9 +1575,9 @@ class TestPostHandlersSQLReflectsParams:
     @pytest.mark.parametrize(
         "body, expected_params",
         [
-            (lax_lists[Client]({"client_name": "Acme Corp"}), ["Acme Corp"]),
+            (ClientLaxList({"client_name": "Acme Corp"}), ["Acme Corp"]),
             (
-                lax_lists[Client](
+                ClientLaxList(
                     {
                         "client_name": "Gridlokkk Holdings Incorporated (& Old Associates)"
                     }
@@ -1585,7 +1595,7 @@ class TestPostHandlersSQLReflectsParams:
         "body, expected_params",
         [
             (
-                lax_lists[Tender](
+                TenderLaxList(
                     {
                         "tender_title": "Big Project",
                         "client_id": 1,
@@ -1601,7 +1611,7 @@ class TestPostHandlersSQLReflectsParams:
                 ],
             ),
             (
-                lax_lists[Tender](
+                TenderLaxList(
                     {
                         "tender_title": "Small Project, in Elements Dismayingly Various",
                         "client_id": 3,
@@ -1627,7 +1637,7 @@ class TestPostHandlersSQLReflectsParams:
         "body, expected_params",
         [
             (
-                lax_lists[TenderLineItem](
+                TenderLineItemLaxList(
                     {
                         "tender_id": 1,
                         "service_id": 2,
@@ -1638,7 +1648,7 @@ class TestPostHandlersSQLReflectsParams:
                 [1, 2, 500, Decimal("99.95")],
             ),
             (
-                lax_lists[TenderLineItem](
+                TenderLineItemLaxList(
                     {
                         "tender_id": 10,
                         "service_id": 20,

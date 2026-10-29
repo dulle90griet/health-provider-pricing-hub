@@ -24,18 +24,17 @@ from botocore.exceptions import ClientError
 
 from hub_api.logger import logger
 from hub_api.exceptions import InvalidParameterError
-from hub_api.models import build_lax_list_model
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 from hub_api.models.requests import (
-    Client,
-    Consumable,
-    DirectCost,
-    JobTitle,
-    LabourCost,
-    OverheadCost,
-    Service,
-    Tender,
-    TenderLineItem,
+    ClientLaxList,
+    ConsumableLaxList,
+    DirectCostLaxList,
+    JobTitleLaxList,
+    LabourCostLaxList,
+    OverheadCostLaxList,
+    ServiceLaxList,
+    TenderLaxList,
+    TenderLineItemLaxList,
     UpdateClient,
     UpdateConsumable,
     UpdateDirectCost,
@@ -404,18 +403,18 @@ from hub_api.models.requests import (
 #     return LaxList
 
 
-models_for_lax_list = [
-    JobTitle,
-    Consumable,
-    Service,
-    OverheadCost,
-    LabourCost,
-    DirectCost,
-    Client,
-    Tender,
-    TenderLineItem,
-]
-lax_lists = {model: build_lax_list_model(model) for model in models_for_lax_list}
+# models_for_lax_list = [
+#     JobTitle,
+#     Consumable,
+#     Service,
+#     OverheadCost,
+#     LabourCost,
+#     DirectCost,
+#     Client,
+#     Tender,
+#     TenderLineItem,
+# ]
+# lax_lists = {model: build_lax_list_model(model) for model in models_for_lax_list}
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -701,7 +700,7 @@ def get_job_title_titles() -> list:
 
 
 @app.post("/job-title")
-def post_job_title(body: Annotated[lax_lists[JobTitle], Body()]) -> None:
+def post_job_title(body: Annotated[JobTitleLaxList, Body()]) -> None:
     """POST method for job_title table"""
     columns = (
         "department_id",
@@ -822,7 +821,7 @@ def get_consumable_names() -> list:
 
 
 @app.post("/consumable")
-def post_consumable(body: Annotated[lax_lists[Consumable], Body()]) -> None:
+def post_consumable(body: Annotated[ConsumableLaxList, Body()]) -> None:
     """POST method for consumable table"""
     columns = ("consumable_name", "default_unit_cost_gbp")
 
@@ -952,7 +951,7 @@ def get_service_slugs() -> list:
 
 
 @app.post("/service")
-def post_service(body: Annotated[lax_lists[Service], Body()]) -> None:
+def post_service(body: Annotated[ServiceLaxList, Body()]) -> None:
     """POST method for service table"""
     columns = (
         "pillar",
@@ -1068,7 +1067,7 @@ def get_overhead_cost(
 
 
 @app.post("/overhead-cost")
-def post_overhead_cost(body: Annotated[lax_lists[OverheadCost], Body()]) -> None:
+def post_overhead_cost(body: Annotated[OverheadCostLaxList, Body()]) -> None:
     """POST method for overhead_cost table"""
     columns = ("cost_type", "cost_description", "budgeted_spend_gbp")
     rows = body.root
@@ -1183,7 +1182,7 @@ def get_labour_cost(
 
 
 @app.post("/labour-cost")
-def post_labour_cost(body: Annotated[lax_lists[LabourCost], Body()]) -> None:
+def post_labour_cost(body: Annotated[LabourCostLaxList, Body()]) -> None:
     """POST method for labour_cost table"""
     columns = ("service_id", "title_engaged_id", "required_time_mins")
     rows = body.root
@@ -1303,7 +1302,7 @@ def get_direct_cost(
 
 
 @app.post("/direct-cost")
-def post_direct_cost(body: Annotated[lax_lists[DirectCost], Body()]) -> None:
+def post_direct_cost(body: Annotated[DirectCostLaxList, Body()]) -> None:
     """POST method for direct_cost table"""
     columns = ("service_id", "consumable_id", "cost_gbp")
     rows = body.root
@@ -1427,7 +1426,7 @@ def get_client_names() -> list:
 
 
 @app.post("/client")
-def post_client(body: Annotated[lax_lists[Client], Body()]) -> None:
+def post_client(body: Annotated[ClientLaxList, Body()]) -> None:
     """POST method for client table"""
     columns = ("client_name",)
     rows = body.root
@@ -1588,7 +1587,7 @@ def get_tender_titles() -> list:
 
 
 @app.post("/tender")
-def post_tender(body: Annotated[lax_lists[Tender], Body()]) -> None:
+def post_tender(body: Annotated[TenderLaxList, Body()]) -> None:
     """POST method for tender table"""
     columns = ("tender_title", "client_id", "projected_sales_value_gbp", "date_created")
     rows = body.root
@@ -1873,7 +1872,7 @@ def get_rich_tender_line_items(
 
 
 @app.post("/tender/line-items")
-def post_tender_line_items(body: Annotated[lax_lists[TenderLineItem], Body()]) -> None:
+def post_tender_line_items(body: Annotated[TenderLineItemLaxList, Body()]) -> None:
     """POST method for tenders_services table"""
     columns = (
         "tender_id",

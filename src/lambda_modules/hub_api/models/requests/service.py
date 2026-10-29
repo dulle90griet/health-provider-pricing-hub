@@ -5,14 +5,17 @@ from typing import Optional, TypeAlias
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field
 from pydantic_strict_partial import create_partial_model
-from hub_api.models import OptionalDecimal
+from hub_api.models import OptionalDecimal, build_lax_list_model
 
 
 OptionalDecimal10x4: TypeAlias = Annotated[Decimal | None, OptionalDecimal(10, 4)]
 
 
 class Service(BaseModel):
-    """A defined service in the system. Model used for POST requests."""
+    """
+    A defined service in the system.
+    Model underlying POST requests.
+    """
 
     pillar: Annotated[str, Field(max_length=50)]
     category: Annotated[str, Field(max_length=50)]
@@ -34,5 +37,7 @@ class Service(BaseModel):
     new_day_rate_gbp: OptionalDecimal10x4 = None
     comments: Optional[Annotated[str, Field(max_length=100)]] = None
 
+
+ServiceLaxList = build_lax_list_model(Service)  # LaxList for POST
 
 UpdateService = create_partial_model(Service)  # Partial model for PATCH
