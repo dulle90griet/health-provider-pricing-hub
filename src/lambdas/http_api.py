@@ -4,7 +4,6 @@ from datetime import datetime
 import json
 from http import HTTPStatus
 
-from typing import Optional
 from typing_extensions import Annotated
 from pydantic import (
     BaseModel,
@@ -32,7 +31,14 @@ from hub_api.logger import logger
 from hub_api.exceptions import InvalidParameterError
 from hub_api.models import build_optional_decimal_type, build_lax_list_model
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
-from hub_api.models.requests import JobTitle, UpdateJobTitle
+from hub_api.models.requests import (
+    Consumable,
+    JobTitle,
+    Service,
+    UpdateConsumable,
+    UpdateJobTitle,
+    UpdateService,
+)
 
 
 # logger = logging.getLogger("logger")
@@ -276,37 +282,37 @@ from hub_api.models.requests import JobTitle, UpdateJobTitle
 # UpdateJobTitle = create_partial_model(JobTitle)
 
 
-class Consumable(BaseModel):
-    consumable_name: Annotated[str, Field(max_length=100)]
-    default_unit_cost_gbp: build_optional_decimal_type(8, 4) = None
+# class Consumable(BaseModel):
+#     consumable_name: Annotated[str, Field(max_length=100)]
+#     default_unit_cost_gbp: build_optional_decimal_type(8, 4) = None
 
 
-UpdateConsumable = create_partial_model(Consumable)
+# UpdateConsumable = create_partial_model(Consumable)
 
 
-class Service(BaseModel):
-    pillar: Annotated[str, Field(max_length=50)]
-    category: Annotated[str, Field(max_length=50)]
-    service_name: Annotated[str, Field(max_length=75)]
-    xero_code: Annotated[int, Field(ge=0, le=9999)]
-    overhead_recovery_on_labour_percentage: Annotated[
-        int, Field(ge=-(2**31), le=2**31 - 1)
-    ]
-    required_profit_margin_percentage: Annotated[
-        Decimal, Field(max_digits=5, decimal_places=2)
-    ]
-    acceptable_market_price_gbp: Annotated[
-        Decimal, Field(max_digits=10, decimal_places=4)
-    ]
-    our_current_unit_price_gbp: Annotated[
-        Decimal, Field(max_digits=10, decimal_places=4)
-    ]
-    new_unit_price_gbp: build_optional_decimal_type(10, 4) = None
-    new_day_rate_gbp: build_optional_decimal_type(10, 4) = None
-    comments: Optional[Annotated[str, Field(max_length=100)]] = None
+# class Service(BaseModel):
+#     pillar: Annotated[str, Field(max_length=50)]
+#     category: Annotated[str, Field(max_length=50)]
+#     service_name: Annotated[str, Field(max_length=75)]
+#     xero_code: Annotated[int, Field(ge=0, le=9999)]
+#     overhead_recovery_on_labour_percentage: Annotated[
+#         int, Field(ge=-(2**31), le=2**31 - 1)
+#     ]
+#     required_profit_margin_percentage: Annotated[
+#         Decimal, Field(max_digits=5, decimal_places=2)
+#     ]
+#     acceptable_market_price_gbp: Annotated[
+#         Decimal, Field(max_digits=10, decimal_places=4)
+#     ]
+#     our_current_unit_price_gbp: Annotated[
+#         Decimal, Field(max_digits=10, decimal_places=4)
+#     ]
+#     new_unit_price_gbp: build_optional_decimal_type(10, 4) = None
+#     new_day_rate_gbp: build_optional_decimal_type(10, 4) = None
+#     comments: Optional[Annotated[str, Field(max_length=100)]] = None
 
 
-UpdateService = create_partial_model(Service)
+# UpdateService = create_partial_model(Service)
 
 
 class OverheadCost(BaseModel):

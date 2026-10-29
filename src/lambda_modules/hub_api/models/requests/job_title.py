@@ -5,14 +5,14 @@ from typing import TypeAlias
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field
 from pydantic_strict_partial import create_partial_model
-from hub_api.models.optional_decimal import OptionalDecimal
+from hub_api.models import OptionalDecimal
 
 
 OptionalDecimal3x1: TypeAlias = Annotated[Decimal | None, OptionalDecimal(3, 1)]
 
 
 class JobTitle(BaseModel):
-    """A defined job title in the system, used for POST requests."""
+    """A defined job title in the system. Model used for POST requests."""
 
     department_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
     title: Annotated[str, Field(max_length=50)]
