@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation as InvalidDecimalOperation
-from typing import Any, TypeAlias
+from typing import Any
 from typing_extensions import Annotated
-from pydantic import Field, GetCoreSchemaHandler, BeforeValidator
+from pydantic import Field, GetCoreSchemaHandler
 from pydantic_core import core_schema
 
 
@@ -34,26 +34,6 @@ class OptionalDecimal:
         return core_schema.no_info_before_validator_function(
             _empty_to_none, core_schema.nullable_schema(inner)
         )
-
-
-def build_optional_decimal_type(max_digits: int, decimal_places: int) -> TypeAlias:
-    """
-    Create an Optional Decimal type with empty string handling and constraints.
-
-    Args:
-        max_digits: Maximum total number of digits
-        decimal_places: Maximum number of decimal places
-
-    Returns:
-        A type alias that can be used in Pydantic models
-    """
-    return Annotated[
-        None
-        | Annotated[
-            Decimal, Field(max_digits=max_digits, decimal_places=decimal_places)
-        ],
-        BeforeValidator(_empty_to_none),
-    ]
 
 
 def _empty_to_none(value: str | Decimal | None) -> Decimal | None:
