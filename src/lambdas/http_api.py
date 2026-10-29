@@ -1,37 +1,35 @@
-import os
-from decimal import Decimal
-from datetime import datetime
-import json
-from http import HTTPStatus
-
-from typing import Optional
 from typing_extensions import Annotated
-from pydantic import (
-    BaseModel,
-    Field,
-)
-from pydantic_strict_partial import create_partial_model
 
-import psycopg_pool
 from psycopg.sql import SQL, Identifier, Placeholder
-from psycopg.rows import dict_row
-from psycopg.errors import UniqueViolation
 
-from aws_lambda_powertools.event_handler import (
-    APIGatewayHttpResolver,
-    Response,
-    content_types,
-)
 from aws_lambda_powertools.event_handler.openapi.params import Query, Body
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
-import boto3
-from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
 from hub_api.logger import logger
-from hub_api.exceptions import InvalidParameterError
-from hub_api.models import build_optional_decimal_type, build_lax_list_model
+from hub_api.resolver import app
+from hub_api.db import DatabaseCursor, db_manager
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
+from hub_api.models.requests import (
+    ClientLaxList,
+    ConsumableLaxList,
+    DirectCostLaxList,
+    JobTitleLaxList,
+    LabourCostLaxList,
+    OverheadCostLaxList,
+    ServiceLaxList,
+    TenderLaxList,
+    TenderLineItemLaxList,
+    UpdateClient,
+    UpdateConsumable,
+    UpdateDirectCost,
+    UpdateJobTitle,
+    UpdateLabourCost,
+    UpdateOverheadCost,
+    UpdateService,
+    UpdateTender,
+    UpdateTenderLineItem,
+)
 
 
 # logger = logging.getLogger("logger")
@@ -261,105 +259,105 @@ from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 #     name: Annotated[str, Field(max_length=50)]
 
 
-class JobTitle(BaseModel):
-    department_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    title: Annotated[str, Field(max_length=50)]
-    default_ft_weekly_hours: Annotated[Decimal, Field(max_digits=3, decimal_places=1)]
-    default_lunch_break_mins: Annotated[int, Field(ge=0, le=240)]
-    hourly_rate_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
-    default_annual_holiday_days: build_optional_decimal_type(3, 1) = None
-    default_annual_training_days: build_optional_decimal_type(3, 1) = None
-    default_annual_sick_days: build_optional_decimal_type(3, 1) = None
+# class JobTitle(BaseModel):
+#     department_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     title: Annotated[str, Field(max_length=50)]
+#     default_ft_weekly_hours: Annotated[Decimal, Field(max_digits=3, decimal_places=1)]
+#     default_lunch_break_mins: Annotated[int, Field(ge=0, le=240)]
+#     hourly_rate_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
+#     default_annual_holiday_days: build_optional_decimal_type(3, 1) = None
+#     default_annual_training_days: build_optional_decimal_type(3, 1) = None
+#     default_annual_sick_days: build_optional_decimal_type(3, 1) = None
 
 
-UpdateJobTitle = create_partial_model(JobTitle)
+# UpdateJobTitle = create_partial_model(JobTitle)
 
 
-class Consumable(BaseModel):
-    consumable_name: Annotated[str, Field(max_length=100)]
-    default_unit_cost_gbp: build_optional_decimal_type(8, 4) = None
+# class Consumable(BaseModel):
+#     consumable_name: Annotated[str, Field(max_length=100)]
+#     default_unit_cost_gbp: build_optional_decimal_type(8, 4) = None
 
 
-UpdateConsumable = create_partial_model(Consumable)
+# UpdateConsumable = create_partial_model(Consumable)
 
 
-class Service(BaseModel):
-    pillar: Annotated[str, Field(max_length=50)]
-    category: Annotated[str, Field(max_length=50)]
-    service_name: Annotated[str, Field(max_length=75)]
-    xero_code: Annotated[int, Field(ge=0, le=9999)]
-    overhead_recovery_on_labour_percentage: Annotated[
-        int, Field(ge=-(2**31), le=2**31 - 1)
-    ]
-    required_profit_margin_percentage: Annotated[
-        Decimal, Field(max_digits=5, decimal_places=2)
-    ]
-    acceptable_market_price_gbp: Annotated[
-        Decimal, Field(max_digits=10, decimal_places=4)
-    ]
-    our_current_unit_price_gbp: Annotated[
-        Decimal, Field(max_digits=10, decimal_places=4)
-    ]
-    new_unit_price_gbp: build_optional_decimal_type(10, 4) = None
-    new_day_rate_gbp: build_optional_decimal_type(10, 4) = None
-    comments: Optional[Annotated[str, Field(max_length=100)]] = None
+# class Service(BaseModel):
+#     pillar: Annotated[str, Field(max_length=50)]
+#     category: Annotated[str, Field(max_length=50)]
+#     service_name: Annotated[str, Field(max_length=75)]
+#     xero_code: Annotated[int, Field(ge=0, le=9999)]
+#     overhead_recovery_on_labour_percentage: Annotated[
+#         int, Field(ge=-(2**31), le=2**31 - 1)
+#     ]
+#     required_profit_margin_percentage: Annotated[
+#         Decimal, Field(max_digits=5, decimal_places=2)
+#     ]
+#     acceptable_market_price_gbp: Annotated[
+#         Decimal, Field(max_digits=10, decimal_places=4)
+#     ]
+#     our_current_unit_price_gbp: Annotated[
+#         Decimal, Field(max_digits=10, decimal_places=4)
+#     ]
+#     new_unit_price_gbp: build_optional_decimal_type(10, 4) = None
+#     new_day_rate_gbp: build_optional_decimal_type(10, 4) = None
+#     comments: Optional[Annotated[str, Field(max_length=100)]] = None
 
 
-UpdateService = create_partial_model(Service)
+# UpdateService = create_partial_model(Service)
 
 
-class OverheadCost(BaseModel):
-    cost_type: Annotated[str, Field(max_length=30)]
-    cost_description: Annotated[str, Field(max_length=30)]
-    budgeted_spend_gbp: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
+# class OverheadCost(BaseModel):
+#     cost_type: Annotated[str, Field(max_length=30)]
+#     cost_description: Annotated[str, Field(max_length=30)]
+#     budgeted_spend_gbp: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
 
 
-UpdateOverheadCost = create_partial_model(OverheadCost)
+# UpdateOverheadCost = create_partial_model(OverheadCost)
 
 
-class LabourCost(BaseModel):
-    service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    title_engaged_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    required_time_mins: Annotated[int, Field(ge=0, le=2**31 - 1)]
+# class LabourCost(BaseModel):
+#     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     title_engaged_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     required_time_mins: Annotated[int, Field(ge=0, le=2**31 - 1)]
 
 
-UpdateLabourCost = create_partial_model(LabourCost)
+# UpdateLabourCost = create_partial_model(LabourCost)
 
 
-class DirectCost(BaseModel):
-    service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    consumable_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    cost_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
+# class DirectCost(BaseModel):
+#     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     consumable_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     cost_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
 
 
-UpdateDirectCost = create_partial_model(DirectCost)
+# UpdateDirectCost = create_partial_model(DirectCost)
 
 
-class Client(BaseModel):
-    client_name: Annotated[str, Field(max_length=50)]
+# class Client(BaseModel):
+#     client_name: Annotated[str, Field(max_length=50)]
 
 
-UpdateClient = create_partial_model(Client)
+# UpdateClient = create_partial_model(Client)
 
 
-class Tender(BaseModel):
-    tender_title: Annotated[str, Field(max_length=50)]
-    client_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    projected_sales_value_gbp: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
-    date_created: datetime
+# class Tender(BaseModel):
+#     tender_title: Annotated[str, Field(max_length=50)]
+#     client_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     projected_sales_value_gbp: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
+#     date_created: datetime
 
 
-UpdateTender = create_partial_model(Tender)
+# UpdateTender = create_partial_model(Tender)
 
 
-class TenderLineItem(BaseModel):
-    tender_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    total_number_pa: Annotated[int, Field(ge=0, le=2**31 - 1)]
-    unit_price_override_gbp: build_optional_decimal_type(10, 4) = None
+# class TenderLineItem(BaseModel):
+#     tender_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     total_number_pa: Annotated[int, Field(ge=0, le=2**31 - 1)]
+#     unit_price_override_gbp: build_optional_decimal_type(10, 4) = None
 
 
-UpdateTenderLineItem = create_partial_model(TenderLineItem)
+# UpdateTenderLineItem = create_partial_model(TenderLineItem)
 
 
 # T = TypeVar("T", bound="BaseModel")
@@ -390,35 +388,35 @@ UpdateTenderLineItem = create_partial_model(TenderLineItem)
 #     return LaxList
 
 
-models_for_lax_list = [
-    JobTitle,
-    Consumable,
-    Service,
-    OverheadCost,
-    LabourCost,
-    DirectCost,
-    Client,
-    Tender,
-    TenderLineItem,
-]
-lax_lists = {model: build_lax_list_model(model) for model in models_for_lax_list}
+# models_for_lax_list = [
+#     JobTitle,
+#     Consumable,
+#     Service,
+#     OverheadCost,
+#     LabourCost,
+#     DirectCost,
+#     Client,
+#     Tender,
+#     TenderLineItem,
+# ]
+# lax_lists = {model: build_lax_list_model(model) for model in models_for_lax_list}
 
 
-class CustomJSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, (Decimal, datetime)):
-            return str(o)
-        return super().default(o)
+# class CustomJSONEncoder(json.JSONEncoder):
+#     def default(self, o):
+#         if isinstance(o, (Decimal, datetime)):
+#             return str(o)
+#         return super().default(o)
 
 
-def custom_serializer(o):
-    return json.dumps(o, separators=(",", ":"), cls=CustomJSONEncoder)
+# def custom_serializer(o):
+#     return json.dumps(o, separators=(",", ":"), cls=CustomJSONEncoder)
 
 
-app = APIGatewayHttpResolver(
-    enable_validation=True,
-    serializer=custom_serializer,
-)
+# app = APIGatewayHttpResolver(
+#     enable_validation=True,
+#     serializer=custom_serializer,
+# )
 
 
 # class InvalidParameterError(ServiceError):
@@ -431,146 +429,146 @@ app = APIGatewayHttpResolver(
 #         # self.loc = loc
 
 
-@app.exception_handler(InvalidParameterError)
-def handle_validation_error(exp: InvalidParameterError):
-    return Response(
-        status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-        content_type=content_types.APPLICATION_JSON,
-        body={
-            "statusCode": HTTPStatus.UNPROCESSABLE_ENTITY,
-            "detail": {
-                # "loc": exp.loc,
-                "message": exp.msg,
-            },
-        },
-    )
+# @app.exception_handler(InvalidParameterError)
+# def handle_validation_error(exp: InvalidParameterError):
+#     return Response(
+#         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+#         content_type=content_types.APPLICATION_JSON,
+#         body={
+#             "statusCode": HTTPStatus.UNPROCESSABLE_ENTITY,
+#             "detail": {
+#                 # "loc": exp.loc,
+#                 "message": exp.msg,
+#             },
+#         },
+#     )
 
 
-@app.exception_handler(UniqueViolation)
-def handle_unique_violation(exp: UniqueViolation):
-    constraint = exp.diag.constraint_name or "unique constraint"
-    detail = exp.diag.message_detail
+# @app.exception_handler(UniqueViolation)
+# def handle_unique_violation(exp: UniqueViolation):
+#     constraint = exp.diag.constraint_name or "unique constraint"
+#     detail = exp.diag.message_detail
 
-    return Response(
-        status_code=409,
-        content_type=content_types.APPLICATION_JSON,
-        body=json.dumps(
-            {
-                "statusCode": HTTPStatus.CONFLICT,
-                "detail": [
-                    {
-                        "loc": ["body", constraint],
-                        "type": "unique_violation",
-                        "message": f"Duplicate value violates unique constraint '{constraint}'. {detail}",
-                    }
-                ],
-            }
-        ),
-    )
-
-
-class DatabaseManager:
-    def __init__(self):
-        self._connection_pool = None
-        self._connection = None
-        self._secret_cache = None
-
-    def _get_secrets(self):
-        """Fetch secrets from Secrets Manager with caching"""
-        if self._secret_cache is None:
-            # Logic to fetch RDS connection details using SSM Secret
-            # TO BE MODULARIZED
-            secrets_manager = boto3.client("secretsmanager")
-            logger.info("Fetching RDS login secret")
-            try:
-                rds_secret = secrets_manager.get_secret_value(
-                    SecretId=os.environ["RDS_LOGIN_SECRET"]
-                )
-                rds_secret_json = json.loads(rds_secret["SecretString"])
-            except ClientError as e:
-                logger.error("Failed to fetch first secret: %s", e)
-                raise
-            logger.info("Fetching RDS master user secret")
-            try:
-                rds_user_secret = secrets_manager.get_secret_value(
-                    SecretId=rds_secret_json["user_secret"]
-                )
-                rds_user_secret_json = json.loads(rds_user_secret["SecretString"])
-                self._secret_cache = {
-                    "host": rds_secret_json["host"],
-                    "port": rds_secret_json["port"],
-                    "dbname": rds_secret_json["dbname"],
-                    "user": rds_user_secret_json["username"],
-                    "password": rds_user_secret_json["password"],
-                }
-            except ClientError as e:
-                logger.error("Failed to fetch second secret: %s", e)
-                raise
-
-        return self._secret_cache
-
-    def _init_pool(self):
-        """Initialize connection pool"""
-        if self._connection_pool is None:
-            config = self._get_secrets()
-
-            conninfo = " ".join(f"{key}={value}" for key, value in config.items())
-            self._connection_pool = psycopg_pool.ConnectionPool(
-                conninfo=conninfo,
-                min_size=1,
-                max_size=20,
-                open=True,  # Open the pool immediately
-            )
-
-            logger.info("Database connection initialized")
-
-    def get_connection(self):
-        """Get a connection from the pool"""
-        self._init_pool()
-
-        logger.info("Getting a connection from the pool")
-        return self._connection_pool.connection()
-
-    def close_all(self):
-        """Close all connections in the pool"""
-        if self._connection_pool:
-            self._connection_pool.close()
-            logger.info("All database connections closed")
+#     return Response(
+#         status_code=409,
+#         content_type=content_types.APPLICATION_JSON,
+#         body=json.dumps(
+#             {
+#                 "statusCode": HTTPStatus.CONFLICT,
+#                 "detail": [
+#                     {
+#                         "loc": ["body", constraint],
+#                         "type": "unique_violation",
+#                         "message": f"Duplicate value violates unique constraint '{constraint}'. {detail}",
+#                     }
+#                 ],
+#             }
+#         ),
+#     )
 
 
-# Global instance persists across warm starts
-db_manager = DatabaseManager()
+# class DatabaseManager:
+#     def __init__(self):
+#         self._connection_pool = None
+#         self._connection = None
+#         self._secret_cache = None
+
+#     def _get_secrets(self):
+#         """Fetch secrets from Secrets Manager with caching"""
+#         if self._secret_cache is None:
+#             # Logic to fetch RDS connection details using SSM Secret
+#             # TO BE MODULARIZED
+#             secrets_manager = boto3.client("secretsmanager")
+#             logger.info("Fetching RDS login secret")
+#             try:
+#                 rds_secret = secrets_manager.get_secret_value(
+#                     SecretId=os.environ["RDS_LOGIN_SECRET"]
+#                 )
+#                 rds_secret_json = json.loads(rds_secret["SecretString"])
+#             except ClientError as e:
+#                 logger.error("Failed to fetch first secret: %s", e)
+#                 raise
+#             logger.info("Fetching RDS master user secret")
+#             try:
+#                 rds_user_secret = secrets_manager.get_secret_value(
+#                     SecretId=rds_secret_json["user_secret"]
+#                 )
+#                 rds_user_secret_json = json.loads(rds_user_secret["SecretString"])
+#                 self._secret_cache = {
+#                     "host": rds_secret_json["host"],
+#                     "port": rds_secret_json["port"],
+#                     "dbname": rds_secret_json["dbname"],
+#                     "user": rds_user_secret_json["username"],
+#                     "password": rds_user_secret_json["password"],
+#                 }
+#             except ClientError as e:
+#                 logger.error("Failed to fetch second secret: %s", e)
+#                 raise
+
+#         return self._secret_cache
+
+#     def _init_pool(self):
+#         """Initialize connection pool"""
+#         if self._connection_pool is None:
+#             config = self._get_secrets()
+
+#             conninfo = " ".join(f"{key}={value}" for key, value in config.items())
+#             self._connection_pool = psycopg_pool.ConnectionPool(
+#                 conninfo=conninfo,
+#                 min_size=1,
+#                 max_size=20,
+#                 open=True,  # Open the pool immediately
+#             )
+
+#             logger.info("Database connection initialized")
+
+#     def get_connection(self):
+#         """Get a connection from the pool"""
+#         self._init_pool()
+
+#         logger.info("Getting a connection from the pool")
+#         return self._connection_pool.connection()
+
+#     def close_all(self):
+#         """Close all connections in the pool"""
+#         if self._connection_pool:
+#             self._connection_pool.close()
+#             logger.info("All database connections closed")
 
 
-class DatabaseCursor:
-    """Context manager for database operations"""
+# # Global instance persists across warm starts
+# db_manager = DatabaseManager()
 
-    def __init__(self, row_factory=None):
-        self.conn_context = None
-        self.connection = None
-        self.cursor = None
-        self.row_factory = row_factory or dict_row
 
-    def __enter__(self):
-        # Get connection from pool
-        self.conn_context = db_manager.get_connection()
-        self.connection = self.conn_context.__enter__()
+# class DatabaseCursor:
+#     """Context manager for database operations"""
 
-        self.cursor = self.connection.cursor(row_factory=self.row_factory)
-        return self.cursor
+#     def __init__(self, row_factory=None):
+#         self.conn_context = None
+#         self.connection = None
+#         self.cursor = None
+#         self.row_factory = row_factory or dict_row
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            # Rollback on error
-            self.connection.rollback()
-        else:
-            # Commit on success
-            self.connection.commit()
+#     def __enter__(self):
+#         # Get connection from pool
+#         self.conn_context = db_manager.get_connection()
+#         self.connection = self.conn_context.__enter__()
 
-        # Close cursor and return connection to pool
-        self.cursor.close()
-        self.conn_context.__exit__(exc_type, exc_val, exc_tb)
-        return False  # Ensure exceptions propagate
+#         self.cursor = self.connection.cursor(row_factory=self.row_factory)
+#         return self.cursor
+
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         if exc_type:
+#             # Rollback on error
+#             self.connection.rollback()
+#         else:
+#             # Commit on success
+#             self.connection.commit()
+
+#         # Close cursor and return connection to pool
+#         self.cursor.close()
+#         self.conn_context.__exit__(exc_type, exc_val, exc_tb)
+#         return False  # Ensure exceptions propagate
 
 
 @app.get("/department")
@@ -687,7 +685,7 @@ def get_job_title_titles() -> list:
 
 
 @app.post("/job-title")
-def post_job_title(body: Annotated[lax_lists[JobTitle], Body()]) -> None:
+def post_job_title(body: Annotated[JobTitleLaxList, Body()]) -> None:
     """POST method for job_title table"""
     columns = (
         "department_id",
@@ -808,7 +806,7 @@ def get_consumable_names() -> list:
 
 
 @app.post("/consumable")
-def post_consumable(body: Annotated[lax_lists[Consumable], Body()]) -> None:
+def post_consumable(body: Annotated[ConsumableLaxList, Body()]) -> None:
     """POST method for consumable table"""
     columns = ("consumable_name", "default_unit_cost_gbp")
 
@@ -938,7 +936,7 @@ def get_service_slugs() -> list:
 
 
 @app.post("/service")
-def post_service(body: Annotated[lax_lists[Service], Body()]) -> None:
+def post_service(body: Annotated[ServiceLaxList, Body()]) -> None:
     """POST method for service table"""
     columns = (
         "pillar",
@@ -1054,7 +1052,7 @@ def get_overhead_cost(
 
 
 @app.post("/overhead-cost")
-def post_overhead_cost(body: Annotated[lax_lists[OverheadCost], Body()]) -> None:
+def post_overhead_cost(body: Annotated[OverheadCostLaxList, Body()]) -> None:
     """POST method for overhead_cost table"""
     columns = ("cost_type", "cost_description", "budgeted_spend_gbp")
     rows = body.root
@@ -1169,7 +1167,7 @@ def get_labour_cost(
 
 
 @app.post("/labour-cost")
-def post_labour_cost(body: Annotated[lax_lists[LabourCost], Body()]) -> None:
+def post_labour_cost(body: Annotated[LabourCostLaxList, Body()]) -> None:
     """POST method for labour_cost table"""
     columns = ("service_id", "title_engaged_id", "required_time_mins")
     rows = body.root
@@ -1289,7 +1287,7 @@ def get_direct_cost(
 
 
 @app.post("/direct-cost")
-def post_direct_cost(body: Annotated[lax_lists[DirectCost], Body()]) -> None:
+def post_direct_cost(body: Annotated[DirectCostLaxList, Body()]) -> None:
     """POST method for direct_cost table"""
     columns = ("service_id", "consumable_id", "cost_gbp")
     rows = body.root
@@ -1413,7 +1411,7 @@ def get_client_names() -> list:
 
 
 @app.post("/client")
-def post_client(body: Annotated[lax_lists[Client], Body()]) -> None:
+def post_client(body: Annotated[ClientLaxList, Body()]) -> None:
     """POST method for client table"""
     columns = ("client_name",)
     rows = body.root
@@ -1574,7 +1572,7 @@ def get_tender_titles() -> list:
 
 
 @app.post("/tender")
-def post_tender(body: Annotated[lax_lists[Tender], Body()]) -> None:
+def post_tender(body: Annotated[TenderLaxList, Body()]) -> None:
     """POST method for tender table"""
     columns = ("tender_title", "client_id", "projected_sales_value_gbp", "date_created")
     rows = body.root
@@ -1859,7 +1857,7 @@ def get_rich_tender_line_items(
 
 
 @app.post("/tender/line-items")
-def post_tender_line_items(body: Annotated[lax_lists[TenderLineItem], Body()]) -> None:
+def post_tender_line_items(body: Annotated[TenderLineItemLaxList, Body()]) -> None:
     """POST method for tenders_services table"""
     columns = (
         "tender_id",
