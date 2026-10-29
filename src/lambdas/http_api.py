@@ -1,21 +1,12 @@
 import os
-from decimal import Decimal
-from datetime import datetime
 import json
-from http import HTTPStatus
 
 from typing_extensions import Annotated
 
 import psycopg_pool
 from psycopg.sql import SQL, Identifier, Placeholder
 from psycopg.rows import dict_row
-from psycopg.errors import UniqueViolation
 
-from aws_lambda_powertools.event_handler import (
-    APIGatewayHttpResolver,
-    Response,
-    content_types,
-)
 from aws_lambda_powertools.event_handler.openapi.params import Query, Body
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
 import boto3
@@ -23,7 +14,7 @@ from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
 from hub_api.logger import logger
-from hub_api.exceptions import InvalidParameterError
+from hub_api.resolver import app
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 from hub_api.models.requests import (
     ClientLaxList,
@@ -417,21 +408,21 @@ from hub_api.models.requests import (
 # lax_lists = {model: build_lax_list_model(model) for model in models_for_lax_list}
 
 
-class CustomJSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, (Decimal, datetime)):
-            return str(o)
-        return super().default(o)
+# class CustomJSONEncoder(json.JSONEncoder):
+#     def default(self, o):
+#         if isinstance(o, (Decimal, datetime)):
+#             return str(o)
+#         return super().default(o)
 
 
-def custom_serializer(o):
-    return json.dumps(o, separators=(",", ":"), cls=CustomJSONEncoder)
+# def custom_serializer(o):
+#     return json.dumps(o, separators=(",", ":"), cls=CustomJSONEncoder)
 
 
-app = APIGatewayHttpResolver(
-    enable_validation=True,
-    serializer=custom_serializer,
-)
+# app = APIGatewayHttpResolver(
+#     enable_validation=True,
+#     serializer=custom_serializer,
+# )
 
 
 # class InvalidParameterError(ServiceError):
@@ -444,42 +435,42 @@ app = APIGatewayHttpResolver(
 #         # self.loc = loc
 
 
-@app.exception_handler(InvalidParameterError)
-def handle_validation_error(exp: InvalidParameterError):
-    return Response(
-        status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-        content_type=content_types.APPLICATION_JSON,
-        body={
-            "statusCode": HTTPStatus.UNPROCESSABLE_ENTITY,
-            "detail": {
-                # "loc": exp.loc,
-                "message": exp.msg,
-            },
-        },
-    )
+# @app.exception_handler(InvalidParameterError)
+# def handle_validation_error(exp: InvalidParameterError):
+#     return Response(
+#         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+#         content_type=content_types.APPLICATION_JSON,
+#         body={
+#             "statusCode": HTTPStatus.UNPROCESSABLE_ENTITY,
+#             "detail": {
+#                 # "loc": exp.loc,
+#                 "message": exp.msg,
+#             },
+#         },
+#     )
 
 
-@app.exception_handler(UniqueViolation)
-def handle_unique_violation(exp: UniqueViolation):
-    constraint = exp.diag.constraint_name or "unique constraint"
-    detail = exp.diag.message_detail
+# @app.exception_handler(UniqueViolation)
+# def handle_unique_violation(exp: UniqueViolation):
+#     constraint = exp.diag.constraint_name or "unique constraint"
+#     detail = exp.diag.message_detail
 
-    return Response(
-        status_code=409,
-        content_type=content_types.APPLICATION_JSON,
-        body=json.dumps(
-            {
-                "statusCode": HTTPStatus.CONFLICT,
-                "detail": [
-                    {
-                        "loc": ["body", constraint],
-                        "type": "unique_violation",
-                        "message": f"Duplicate value violates unique constraint '{constraint}'. {detail}",
-                    }
-                ],
-            }
-        ),
-    )
+#     return Response(
+#         status_code=409,
+#         content_type=content_types.APPLICATION_JSON,
+#         body=json.dumps(
+#             {
+#                 "statusCode": HTTPStatus.CONFLICT,
+#                 "detail": [
+#                     {
+#                         "loc": ["body", constraint],
+#                         "type": "unique_violation",
+#                         "message": f"Duplicate value violates unique constraint '{constraint}'. {detail}",
+#                     }
+#                 ],
+#             }
+#         ),
+#     )
 
 
 class DatabaseManager:

@@ -16,6 +16,8 @@ from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from polyfactory.factories.pydantic_factory import ModelFactory
 
+from hub_api.exceptions import InvalidParameterError
+from hub_api.resolver.serializer import CustomJSONEncoder
 from hub_api.models.params.sort import SortClause, _parse_sort_strings
 from hub_api.models.params.whitelist import filter_by_whitelist
 from hub_api.models.optional_decimal import OptionalDecimal
@@ -37,11 +39,9 @@ from src.lambdas.http_api import (
     # parse_sort_strings,
     # filter_by_whitelist,
     build_search_sql,
-    InvalidParameterError,
     URIQueries,
     # SortClause,
     SortClauses,
-    CustomJSONEncoder,
     # Department,
     JobTitleLaxList,
     UpdateJobTitle,
