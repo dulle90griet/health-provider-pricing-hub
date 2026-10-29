@@ -2221,7 +2221,6 @@ def get_invalid_values_for_field(
     Return a list of invalid JSON values appropriate to the field's type.
     Enums are treated as a special case.
     """
-    print(f">>>>>>>>>>>>>>{field}, {field.metadata}, {field.annotation}")
     if field.metadata and isinstance(field.metadata[0], OptionalDecimal):
         max_digits = field.metadata[0].max_digits
         decimal_places = field.metadata[0].decimal_places
