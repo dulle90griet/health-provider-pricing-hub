@@ -33,11 +33,13 @@ from hub_api.models import build_optional_decimal_type, build_lax_list_model
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 from hub_api.models.requests import (
     Consumable,
+    DirectCost,
     JobTitle,
     LabourCost,
     OverheadCost,
     Service,
     UpdateConsumable,
+    UpdateDirectCost,
     UpdateJobTitle,
     UpdateLabourCost,
     UpdateOverheadCost,
@@ -337,13 +339,13 @@ from hub_api.models.requests import (
 # UpdateLabourCost = create_partial_model(LabourCost)
 
 
-class DirectCost(BaseModel):
-    service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    consumable_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    cost_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
+# class DirectCost(BaseModel):
+#     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     consumable_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     cost_gbp: Annotated[Decimal, Field(max_digits=7, decimal_places=4)]
 
 
-UpdateDirectCost = create_partial_model(DirectCost)
+# UpdateDirectCost = create_partial_model(DirectCost)
 
 
 class Client(BaseModel):
