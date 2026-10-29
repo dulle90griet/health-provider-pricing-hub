@@ -34,9 +34,11 @@ from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 from hub_api.models.requests import (
     Consumable,
     JobTitle,
+    OverheadCost,
     Service,
     UpdateConsumable,
     UpdateJobTitle,
+    UpdateOverheadCost,
     UpdateService,
 )
 
@@ -315,13 +317,13 @@ from hub_api.models.requests import (
 # UpdateService = create_partial_model(Service)
 
 
-class OverheadCost(BaseModel):
-    cost_type: Annotated[str, Field(max_length=30)]
-    cost_description: Annotated[str, Field(max_length=30)]
-    budgeted_spend_gbp: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
+# class OverheadCost(BaseModel):
+#     cost_type: Annotated[str, Field(max_length=30)]
+#     cost_description: Annotated[str, Field(max_length=30)]
+#     budgeted_spend_gbp: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
 
 
-UpdateOverheadCost = create_partial_model(OverheadCost)
+# UpdateOverheadCost = create_partial_model(OverheadCost)
 
 
 class LabourCost(BaseModel):
