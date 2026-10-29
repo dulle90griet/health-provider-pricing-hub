@@ -39,6 +39,7 @@ from hub_api.models.requests import (
     LabourCost,
     OverheadCost,
     Service,
+    Tender,
     UpdateClient,
     UpdateConsumable,
     UpdateDirectCost,
@@ -46,6 +47,7 @@ from hub_api.models.requests import (
     UpdateLabourCost,
     UpdateOverheadCost,
     UpdateService,
+    UpdateTender,
 )
 
 
@@ -357,14 +359,14 @@ from hub_api.models.requests import (
 # UpdateClient = create_partial_model(Client)
 
 
-class Tender(BaseModel):
-    tender_title: Annotated[str, Field(max_length=50)]
-    client_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    projected_sales_value_gbp: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
-    date_created: datetime
+# class Tender(BaseModel):
+#     tender_title: Annotated[str, Field(max_length=50)]
+#     client_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     projected_sales_value_gbp: Annotated[int, Field(ge=-(2**31), le=2**31 - 1)]
+#     date_created: datetime
 
 
-UpdateTender = create_partial_model(Tender)
+# UpdateTender = create_partial_model(Tender)
 
 
 class TenderLineItem(BaseModel):

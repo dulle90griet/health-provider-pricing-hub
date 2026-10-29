@@ -6,6 +6,7 @@ from .job_title import JobTitle, UpdateJobTitle
 from .labour_cost import LabourCost, UpdateLabourCost
 from .overhead_cost import OverheadCost, UpdateOverheadCost
 from .service import Service, UpdateService
+from .tender import Tender, UpdateTender
 
 __all__ = [
     "Client",
@@ -16,6 +17,7 @@ __all__ = [
     "LabourCost",
     "OverheadCost",
     "Service",
+    "Tender",
     "UpdateClient",
     "UpdateConsumable",
     "UpdateDepartment",
@@ -24,4 +26,5 @@ __all__ = [
     "UpdateLabourCost",
     "UpdateOverheadCost",
     "UpdateService",
+    "UpdateTender",
 ]
