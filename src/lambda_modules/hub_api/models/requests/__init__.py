@@ -1,3 +1,4 @@
+from .client import Client, UpdateClient
 from .consumable import Consumable, UpdateConsumable
 from .department import Department, UpdateDepartment
 from .direct_cost import DirectCost, UpdateDirectCost
@@ -7,6 +8,7 @@ from .overhead_cost import OverheadCost, UpdateOverheadCost
 from .service import Service, UpdateService
 
 __all__ = [
+    "Client",
     "Consumable",
     "Department",
     "DirectCost",
@@ -14,6 +16,7 @@ __all__ = [
     "LabourCost",
     "OverheadCost",
     "Service",
+    "UpdateClient",
     "UpdateConsumable",
     "UpdateDepartment",
     "UpdateDirectCost",

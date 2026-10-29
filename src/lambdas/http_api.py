@@ -32,12 +32,14 @@ from hub_api.exceptions import InvalidParameterError
 from hub_api.models import build_optional_decimal_type, build_lax_list_model
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 from hub_api.models.requests import (
+    Client,
     Consumable,
     DirectCost,
     JobTitle,
     LabourCost,
     OverheadCost,
     Service,
+    UpdateClient,
     UpdateConsumable,
     UpdateDirectCost,
     UpdateJobTitle,
@@ -348,11 +350,11 @@ from hub_api.models.requests import (
 # UpdateDirectCost = create_partial_model(DirectCost)
 
 
-class Client(BaseModel):
-    client_name: Annotated[str, Field(max_length=50)]
+# class Client(BaseModel):
+#     client_name: Annotated[str, Field(max_length=50)]
 
 
-UpdateClient = create_partial_model(Client)
+# UpdateClient = create_partial_model(Client)
 
 
 class Tender(BaseModel):
