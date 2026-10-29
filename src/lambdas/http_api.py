@@ -34,10 +34,12 @@ from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 from hub_api.models.requests import (
     Consumable,
     JobTitle,
+    LabourCost,
     OverheadCost,
     Service,
     UpdateConsumable,
     UpdateJobTitle,
+    UpdateLabourCost,
     UpdateOverheadCost,
     UpdateService,
 )
@@ -326,13 +328,13 @@ from hub_api.models.requests import (
 # UpdateOverheadCost = create_partial_model(OverheadCost)
 
 
-class LabourCost(BaseModel):
-    service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    title_engaged_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
-    required_time_mins: Annotated[int, Field(ge=0, le=2**31 - 1)]
+# class LabourCost(BaseModel):
+#     service_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     title_engaged_id: Annotated[int, Field(ge=1, le=2**31 - 1)]
+#     required_time_mins: Annotated[int, Field(ge=0, le=2**31 - 1)]
 
 
-UpdateLabourCost = create_partial_model(LabourCost)
+# UpdateLabourCost = create_partial_model(LabourCost)
 
 
 class DirectCost(BaseModel):
