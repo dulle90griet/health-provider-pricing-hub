@@ -1,9 +1,39 @@
-"""OptionalDecimal Type factory for use in Pydantic models"""
+"""OptionalDecimal custom annotation for use in Pydantic models"""
 
+from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation as InvalidDecimalOperation
-from typing import TypeAlias
+from typing import Any, TypeAlias
 from typing_extensions import Annotated
-from pydantic import Field, BeforeValidator
+from pydantic import Field, GetCoreSchemaHandler, BeforeValidator
+from pydantic_core import core_schema
+
+
+@dataclass(frozen=True)
+class OptionalDecimal:
+    """
+    Optional Decimal type annotation with empty string handling
+    (via _empty_to_none() BeforeValidator) and constraints applied
+    only if a decimal value is provided.
+    """
+
+    max_digits: int
+    decimal_places: int
+
+    def __get_pydantic_core_schema__(
+        self, _: Any, handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        inner = handler(
+            Annotated[
+                Decimal,
+                Field(
+                    max_digits=self.max_digits,
+                    decimal_places=self.decimal_places,
+                ),
+            ]
+        )
+        return core_schema.no_info_before_validator_function(
+            _empty_to_none, core_schema.nullable_schema(inner)
+        )
 
 
 def build_optional_decimal_type(max_digits: int, decimal_places: int) -> TypeAlias:

@@ -18,6 +18,7 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 
 from hub_api.models.params.sort import SortClause, _parse_sort_strings
 from hub_api.models.params.whitelist import filter_by_whitelist
+from hub_api.models.optional_decimal import OptionalDecimal
 
 from src.lambdas.http_api import (
     logger,
@@ -2220,8 +2221,19 @@ def get_invalid_values_for_field(
     Return a list of invalid JSON values appropriate to the field's type.
     Enums are treated as a special case.
     """
-    annotation = unwrap_annotation(field.annotation)
+    print(f">>>>>>>>>>>>>>{field}, {field.metadata}, {field.annotation}")
+    if field.metadata and isinstance(field.metadata[0], OptionalDecimal):
+        max_digits = field.metadata[0].max_digits
+        decimal_places = field.metadata[0].decimal_places
 
+        values = [v for v in invalid_values[Decimal] if v != ""]
+        values += [
+            1 * 10 ** (max_digits - decimal_places),
+            "0." + "9" * (decimal_places + 1),
+        ]
+        return values
+
+    annotation = unwrap_annotation(field.annotation)
     if annotation not in invalid_values:
         raise TypeError(
             f"Field type `{annotation}` not covered by test suite. Please use another "
