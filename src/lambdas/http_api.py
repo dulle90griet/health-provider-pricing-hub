@@ -1,20 +1,14 @@
-import os
-import json
-
 from typing_extensions import Annotated
 
-import psycopg_pool
 from psycopg.sql import SQL, Identifier, Placeholder
-from psycopg.rows import dict_row
 
 from aws_lambda_powertools.event_handler.openapi.params import Query, Body
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
-import boto3
-from botocore.exceptions import ClientError
 # from aws_lambda_powertools import Logger
 
 from hub_api.logger import logger
 from hub_api.resolver import app
+from hub_api.db import DatabaseCursor, db_manager
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 from hub_api.models.requests import (
     ClientLaxList,
@@ -473,108 +467,108 @@ from hub_api.models.requests import (
 #     )
 
 
-class DatabaseManager:
-    def __init__(self):
-        self._connection_pool = None
-        self._connection = None
-        self._secret_cache = None
+# class DatabaseManager:
+#     def __init__(self):
+#         self._connection_pool = None
+#         self._connection = None
+#         self._secret_cache = None
 
-    def _get_secrets(self):
-        """Fetch secrets from Secrets Manager with caching"""
-        if self._secret_cache is None:
-            # Logic to fetch RDS connection details using SSM Secret
-            # TO BE MODULARIZED
-            secrets_manager = boto3.client("secretsmanager")
-            logger.info("Fetching RDS login secret")
-            try:
-                rds_secret = secrets_manager.get_secret_value(
-                    SecretId=os.environ["RDS_LOGIN_SECRET"]
-                )
-                rds_secret_json = json.loads(rds_secret["SecretString"])
-            except ClientError as e:
-                logger.error("Failed to fetch first secret: %s", e)
-                raise
-            logger.info("Fetching RDS master user secret")
-            try:
-                rds_user_secret = secrets_manager.get_secret_value(
-                    SecretId=rds_secret_json["user_secret"]
-                )
-                rds_user_secret_json = json.loads(rds_user_secret["SecretString"])
-                self._secret_cache = {
-                    "host": rds_secret_json["host"],
-                    "port": rds_secret_json["port"],
-                    "dbname": rds_secret_json["dbname"],
-                    "user": rds_user_secret_json["username"],
-                    "password": rds_user_secret_json["password"],
-                }
-            except ClientError as e:
-                logger.error("Failed to fetch second secret: %s", e)
-                raise
+#     def _get_secrets(self):
+#         """Fetch secrets from Secrets Manager with caching"""
+#         if self._secret_cache is None:
+#             # Logic to fetch RDS connection details using SSM Secret
+#             # TO BE MODULARIZED
+#             secrets_manager = boto3.client("secretsmanager")
+#             logger.info("Fetching RDS login secret")
+#             try:
+#                 rds_secret = secrets_manager.get_secret_value(
+#                     SecretId=os.environ["RDS_LOGIN_SECRET"]
+#                 )
+#                 rds_secret_json = json.loads(rds_secret["SecretString"])
+#             except ClientError as e:
+#                 logger.error("Failed to fetch first secret: %s", e)
+#                 raise
+#             logger.info("Fetching RDS master user secret")
+#             try:
+#                 rds_user_secret = secrets_manager.get_secret_value(
+#                     SecretId=rds_secret_json["user_secret"]
+#                 )
+#                 rds_user_secret_json = json.loads(rds_user_secret["SecretString"])
+#                 self._secret_cache = {
+#                     "host": rds_secret_json["host"],
+#                     "port": rds_secret_json["port"],
+#                     "dbname": rds_secret_json["dbname"],
+#                     "user": rds_user_secret_json["username"],
+#                     "password": rds_user_secret_json["password"],
+#                 }
+#             except ClientError as e:
+#                 logger.error("Failed to fetch second secret: %s", e)
+#                 raise
 
-        return self._secret_cache
+#         return self._secret_cache
 
-    def _init_pool(self):
-        """Initialize connection pool"""
-        if self._connection_pool is None:
-            config = self._get_secrets()
+#     def _init_pool(self):
+#         """Initialize connection pool"""
+#         if self._connection_pool is None:
+#             config = self._get_secrets()
 
-            conninfo = " ".join(f"{key}={value}" for key, value in config.items())
-            self._connection_pool = psycopg_pool.ConnectionPool(
-                conninfo=conninfo,
-                min_size=1,
-                max_size=20,
-                open=True,  # Open the pool immediately
-            )
+#             conninfo = " ".join(f"{key}={value}" for key, value in config.items())
+#             self._connection_pool = psycopg_pool.ConnectionPool(
+#                 conninfo=conninfo,
+#                 min_size=1,
+#                 max_size=20,
+#                 open=True,  # Open the pool immediately
+#             )
 
-            logger.info("Database connection initialized")
+#             logger.info("Database connection initialized")
 
-    def get_connection(self):
-        """Get a connection from the pool"""
-        self._init_pool()
+#     def get_connection(self):
+#         """Get a connection from the pool"""
+#         self._init_pool()
 
-        logger.info("Getting a connection from the pool")
-        return self._connection_pool.connection()
+#         logger.info("Getting a connection from the pool")
+#         return self._connection_pool.connection()
 
-    def close_all(self):
-        """Close all connections in the pool"""
-        if self._connection_pool:
-            self._connection_pool.close()
-            logger.info("All database connections closed")
-
-
-# Global instance persists across warm starts
-db_manager = DatabaseManager()
+#     def close_all(self):
+#         """Close all connections in the pool"""
+#         if self._connection_pool:
+#             self._connection_pool.close()
+#             logger.info("All database connections closed")
 
 
-class DatabaseCursor:
-    """Context manager for database operations"""
+# # Global instance persists across warm starts
+# db_manager = DatabaseManager()
 
-    def __init__(self, row_factory=None):
-        self.conn_context = None
-        self.connection = None
-        self.cursor = None
-        self.row_factory = row_factory or dict_row
 
-    def __enter__(self):
-        # Get connection from pool
-        self.conn_context = db_manager.get_connection()
-        self.connection = self.conn_context.__enter__()
+# class DatabaseCursor:
+#     """Context manager for database operations"""
 
-        self.cursor = self.connection.cursor(row_factory=self.row_factory)
-        return self.cursor
+#     def __init__(self, row_factory=None):
+#         self.conn_context = None
+#         self.connection = None
+#         self.cursor = None
+#         self.row_factory = row_factory or dict_row
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            # Rollback on error
-            self.connection.rollback()
-        else:
-            # Commit on success
-            self.connection.commit()
+#     def __enter__(self):
+#         # Get connection from pool
+#         self.conn_context = db_manager.get_connection()
+#         self.connection = self.conn_context.__enter__()
 
-        # Close cursor and return connection to pool
-        self.cursor.close()
-        self.conn_context.__exit__(exc_type, exc_val, exc_tb)
-        return False  # Ensure exceptions propagate
+#         self.cursor = self.connection.cursor(row_factory=self.row_factory)
+#         return self.cursor
+
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         if exc_type:
+#             # Rollback on error
+#             self.connection.rollback()
+#         else:
+#             # Commit on success
+#             self.connection.commit()
+
+#         # Close cursor and return connection to pool
+#         self.cursor.close()
+#         self.conn_context.__exit__(exc_type, exc_val, exc_tb)
+#         return False  # Ensure exceptions propagate
 
 
 @app.get("/department")
