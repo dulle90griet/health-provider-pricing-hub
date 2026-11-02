@@ -18,3 +18,6 @@ app = APIGatewayHttpResolver(
 # Register custom exception handlers to the APIGatewayHttpResolver
 app.exception_handler_manager.exception_handler(exc_class=handle_unique_violation)
 app.exception_handler_manager.exception_handler(exc_class=handle_validation_error)
+
+# Register routes
+app.route("/department", "GET")

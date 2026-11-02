@@ -571,22 +571,22 @@ from hub_api.models.requests import (
 #         return False  # Ensure exceptions propagate
 
 
-@app.get("/department")
-def get_department() -> list:
-    """GET method for department table"""
-    sort_clause_sql = SortClauses("name").to_sql()
+# @app.get("/department")
+# def get_department() -> list:
+#     """GET method for department table"""
+#     sort_clause_sql = SortClauses("name").to_sql()
 
-    get_department_sql = SQL("""
-        SELECT *
-        FROM department
-        {sort_clause}
-    """).format(sort_clause=sort_clause_sql)
+#     get_department_sql = SQL("""
+#         SELECT *
+#         FROM department
+#         {sort_clause}
+#     """).format(sort_clause=sort_clause_sql)
 
-    with DatabaseCursor() as cursor:
-        cursor.execute(get_department_sql)
-        results = cursor.fetchall()
+#     with DatabaseCursor() as cursor:
+#         cursor.execute(get_department_sql)
+#         results = cursor.fetchall()
 
-    return results
+#     return results
 
 
 @app.get("/job-title")
