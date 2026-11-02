@@ -1,3 +1,9 @@
+from .consumable import (
+    get_consumable,
+    get_consumable_names,
+    post_consumable,
+    patch_consumable,
+)
 from .department import get_department
 from .job_title import (
     get_job_title,
@@ -7,6 +13,10 @@ from .job_title import (
 )
 
 __all__ = [
+    "get_consumable",
+    "get_consumable_names",
+    "post_consumable",
+    "patch_consumable",
     "get_department",
     "get_job_title",
     "get_job_title_titles",
