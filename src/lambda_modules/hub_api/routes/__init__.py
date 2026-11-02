@@ -11,6 +11,12 @@ from .job_title import (
     post_job_title,
     patch_job_title,
 )
+from .service import (
+    get_service,
+    get_service_slugs,
+    post_service,
+    patch_service,
+)
 
 __all__ = [
     "get_consumable",
@@ -22,4 +28,8 @@ __all__ = [
     "get_job_title_titles",
     "post_job_title",
     "patch_job_title",
+    "get_service",
+    "get_service_slugs",
+    "post_service",
+    "patch_service",
 ]
