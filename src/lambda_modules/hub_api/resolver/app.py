@@ -8,6 +8,7 @@ from hub_api.resolver.exception_handlers import (
     handle_unique_violation,
     handle_validation_error,
 )
+from hub_api.routes import get_department, get_job_title
 
 
 app = APIGatewayHttpResolver(
@@ -20,4 +21,5 @@ app.exception_handler_manager.exception_handler(exc_class=handle_unique_violatio
 app.exception_handler_manager.exception_handler(exc_class=handle_validation_error)
 
 # Register routes
-app.route("/department", "GET")
+app.route("/department", "GET")(get_department)
+app.route("/job-title", "GET")(get_job_title)
