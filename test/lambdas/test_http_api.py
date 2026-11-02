@@ -23,6 +23,8 @@ from hub_api.models.params.whitelist import filter_by_whitelist
 from hub_api.models.optional_decimal import OptionalDecimal
 from hub_api.models.requests import (
     JobTitle,
+    JobTitleLaxList,
+    UpdateJobTitle,
     Consumable,
     Service,
     OverheadCost,
@@ -32,7 +34,13 @@ from hub_api.models.requests import (
     Tender,
     TenderLineItem,
 )
-from hub_api.routes import get_department, get_job_title
+from hub_api.routes import (
+    get_department,
+    get_job_title,
+    get_job_title_titles,
+    post_job_title,
+    patch_job_title,
+)
 
 from src.lambdas.http_api import (
     logger,
@@ -44,8 +52,6 @@ from src.lambdas.http_api import (
     # SortClause,
     SortClauses,
     # Department,
-    JobTitleLaxList,
-    UpdateJobTitle,
     ConsumableLaxList,
     UpdateConsumable,
     ServiceLaxList,
@@ -62,9 +68,6 @@ from src.lambdas.http_api import (
     UpdateTender,
     TenderLineItemLaxList,
     UpdateTenderLineItem,
-    get_job_title_titles,
-    post_job_title,
-    patch_job_title,
     get_consumable,
     get_consumable_names,
     post_consumable,
