@@ -5,6 +5,11 @@ from .consumable import (
     patch_consumable,
 )
 from .department import get_department
+from .direct_cost import (
+    get_direct_cost,
+    post_direct_cost,
+    patch_direct_cost,
+)
 from .job_title import (
     get_job_title,
     get_job_title_titles,
@@ -34,6 +39,9 @@ __all__ = [
     "post_consumable",
     "patch_consumable",
     "get_department",
+    "get_direct_cost",
+    "post_direct_cost",
+    "patch_direct_cost",
     "get_job_title",
     "get_job_title_titles",
     "post_job_title",

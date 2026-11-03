@@ -14,6 +14,9 @@ from hub_api.routes import (
     post_consumable,
     patch_consumable,
     get_department,
+    get_direct_cost,
+    post_direct_cost,
+    patch_direct_cost,
     get_job_title,
     get_job_title_titles,
     post_job_title,
@@ -41,15 +44,18 @@ app.exception_handler_manager.exception_handler(exc_class=handle_unique_violatio
 app.exception_handler_manager.exception_handler(exc_class=handle_validation_error)
 
 # Register routes
-app.route("/department", "GET")(get_department)
-app.route("/job-title", "GET")(get_job_title)
-app.route("/job-title/titles", "GET")(get_job_title_titles)
-app.route("/job-title", "POST")(post_job_title)
-app.route("/job-title/<job_title_id>", "PATCH")(patch_job_title)
 app.route("/consumable", "GET")(get_consumable)
 app.route("/consumable/names", "GET")(get_consumable_names)
 app.route("/consumable", "POST")(post_consumable)
 app.route("/consumable/<consumable_id>", "PATCH")(patch_consumable)
+app.route("/department", "GET")(get_department)
+app.route("/direct-cost", "GET")(get_direct_cost)
+app.route("/direct-cost", "POST")(post_direct_cost)
+app.route("/direct-cost/<service_id>/<consumable_id>", "PATCH")(patch_direct_cost)
+app.route("/job-title", "GET")(get_job_title)
+app.route("/job-title/titles", "GET")(get_job_title_titles)
+app.route("/job-title", "POST")(post_job_title)
+app.route("/job-title/<job_title_id>", "PATCH")(patch_job_title)
 app.route("/labour-cost", "GET")(get_labour_cost)
 app.route("/labour-cost", "POST")(post_labour_cost)
 app.route("/labour-cost/<service_id>/<title_engaged_id>", "PATCH")(patch_labour_cost)

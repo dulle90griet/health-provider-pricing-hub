@@ -96,7 +96,7 @@ def patch_overhead_cost(
 ) -> None:
     """PATCH method for overhead_cost table"""
     logger.info("PATCHing overhead_cost ID: %s", overhead_cost_id)
-    logger.info(app.current_event.body)
+    logger.info(body)
 
     updated_columns = body.model_dump(exclude_unset=True)
 
