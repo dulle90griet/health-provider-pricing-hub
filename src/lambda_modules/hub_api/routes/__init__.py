@@ -38,6 +38,13 @@ from .service import (
     post_service,
     patch_service,
 )
+from .tender import (
+    get_tender,
+    get_tender_single,
+    get_tender_titles,
+    post_tender,
+    patch_tender,
+)
 
 __all__ = [
     "get_client",
@@ -66,4 +73,9 @@ __all__ = [
     "get_service_slugs",
     "post_service",
     "patch_service",
+    "get_tender",
+    "get_tender_single",
+    "get_tender_titles",
+    "post_tender",
+    "patch_tender",
 ]

@@ -35,6 +35,11 @@ from hub_api.routes import (
     get_service_slugs,
     post_service,
     patch_service,
+    get_tender,
+    get_tender_single,
+    get_tender_titles,
+    post_tender,
+    patch_tender,
 )
 
 
@@ -74,3 +79,8 @@ app.route("/service", "GET")(get_service)
 app.route("/service/slugs", "GET")(get_service_slugs)
 app.route("/service", "POST")(post_service)
 app.route("/service/<service_id>", "PATCH")(patch_service)
+app.route("/tender", "GET")(get_tender)
+app.route("/tender/single/<tender_id>", "GET")(get_tender_single)
+app.route("/tender/titles", "GET")(get_tender_titles)
+app.route("/tender", "POST")(post_tender)
+app.route("/tender/<tender_id>", "PATCH")(patch_tender)
