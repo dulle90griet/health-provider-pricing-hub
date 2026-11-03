@@ -9,6 +9,10 @@ from hub_api.resolver.exception_handlers import (
     handle_validation_error,
 )
 from hub_api.routes import (
+    get_client,
+    get_client_names,
+    post_client,
+    patch_client,
     get_consumable,
     get_consumable_names,
     post_consumable,
@@ -44,6 +48,10 @@ app.exception_handler_manager.exception_handler(exc_class=handle_unique_violatio
 app.exception_handler_manager.exception_handler(exc_class=handle_validation_error)
 
 # Register routes
+app.route("/client", "GET")(get_client)
+app.route("/client/names", "GET")(get_client_names)
+app.route("/client", "POST")(post_client)
+app.route("/client/<client_id>", "PATCH")(patch_client)
 app.route("/consumable", "GET")(get_consumable)
 app.route("/consumable/names", "GET")(get_consumable_names)
 app.route("/consumable", "POST")(post_consumable)

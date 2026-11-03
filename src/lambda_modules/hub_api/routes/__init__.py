@@ -1,3 +1,9 @@
+from .client import (
+    get_client,
+    get_client_names,
+    post_client,
+    patch_client,
+)
 from .consumable import (
     get_consumable,
     get_consumable_names,
@@ -34,6 +40,10 @@ from .service import (
 )
 
 __all__ = [
+    "get_client",
+    "get_client_names",
+    "post_client",
+    "patch_client",
     "get_consumable",
     "get_consumable_names",
     "post_consumable",
