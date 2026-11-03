@@ -7,7 +7,7 @@ from datetime import datetime, date
 from decimal import Decimal as Decimal
 from typing import Any, Annotated, get_origin, get_args
 import functools
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 
 import pytest
 from hypothesis import given, example, settings, HealthCheck
@@ -18,85 +18,79 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 
 from hub_api.exceptions import InvalidParameterError
 from hub_api.resolver.serializer import CustomJSONEncoder
-from hub_api.models.params.sort import SortClause, _parse_sort_strings
+from hub_api.models.params.queries import URIQueries
+from hub_api.models.params.search import build_search_sql
+from hub_api.models.params.sort import SortClause, SortClauses, _parse_sort_strings
 from hub_api.models.params.whitelist import filter_by_whitelist
 from hub_api.models.optional_decimal import OptionalDecimal
 from hub_api.models.requests import (
     JobTitle,
-    Consumable,
-    Service,
-    OverheadCost,
-    LabourCost,
-    DirectCost,
-    Client,
-    Tender,
-    TenderLineItem,
-)
-
-from src.lambdas.http_api import (
-    logger,
-    app,
-    # parse_sort_strings,
-    # filter_by_whitelist,
-    build_search_sql,
-    URIQueries,
-    # SortClause,
-    SortClauses,
-    # Department,
     JobTitleLaxList,
     UpdateJobTitle,
+    Consumable,
     ConsumableLaxList,
     UpdateConsumable,
+    Service,
     ServiceLaxList,
     UpdateService,
+    OverheadCost,
     OverheadCostLaxList,
     UpdateOverheadCost,
+    LabourCost,
     LabourCostLaxList,
     UpdateLabourCost,
+    DirectCost,
     DirectCostLaxList,
     UpdateDirectCost,
+    Client,
     ClientLaxList,
     UpdateClient,
+    Tender,
+    TenderLineItem,
     TenderLaxList,
     UpdateTender,
     TenderLineItemLaxList,
     UpdateTenderLineItem,
-    get_department,
-    get_job_title,
-    get_job_title_titles,
-    post_job_title,
-    patch_job_title,
-    get_consumable,
-    get_consumable_names,
-    post_consumable,
-    patch_consumable,
-    get_service,
-    get_service_slugs,
-    post_service,
-    patch_service,
-    get_overhead_cost,
-    post_overhead_cost,
-    patch_overhead_cost,
-    get_labour_cost,
-    post_labour_cost,
-    patch_labour_cost,
-    get_direct_cost,
-    post_direct_cost,
-    patch_direct_cost,
+)
+from hub_api.routes import (
     get_client,
     get_client_names,
     post_client,
     patch_client,
+    get_consumable,
+    get_consumable_names,
+    post_consumable,
+    patch_consumable,
+    get_department,
+    get_direct_cost,
+    post_direct_cost,
+    patch_direct_cost,
+    get_job_title,
+    get_job_title_titles,
+    post_job_title,
+    patch_job_title,
+    get_labour_cost,
+    post_labour_cost,
+    patch_labour_cost,
+    get_overhead_cost,
+    post_overhead_cost,
+    patch_overhead_cost,
+    get_service,
+    get_service_slugs,
+    post_service,
+    patch_service,
     get_tender,
     get_tender_single,
     get_tender_titles,
     post_tender,
     patch_tender,
     get_tender_line_items,
-    get_rich_tender_line_items,
     post_tender_line_items,
     patch_tender_line_item,
+    get_rich_tender_line_items,
 )
+
+from src.lambdas.http_api import logger, app
 
 logger.setLevel(logging.ERROR)
 
@@ -421,8 +415,8 @@ def seed_random():
 
 @pytest.fixture
 def mock_cursor():
-    """Patch DatabaseCursor; yield a fresh MagicMock cursor each test."""
-    with patch("src.lambdas.http_api.DatabaseCursor") as mock:
+    """Patch db_manager; yield a fresh MagicMock cursor each test."""
+    with patch("hub_api.db.cursor.db_manager") as mock:
         cursor = MagicMock()
         cursor.fetchall.return_value = []
 
@@ -431,8 +425,17 @@ def mock_cursor():
         cursor.adapters = mock_adapters
         cursor.connection = None
 
-        mock.return_value.__enter__.return_value = cursor
-        mock.return_value.__exit__.return_value = False
+        # Mock the connection that returns the cursor
+        connection = Mock()
+        connection.cursor.return_value = cursor
+
+        # Mock the context manager that returns the connection
+        conn_context = MagicMock()
+        conn_context.__enter__.return_value = connection
+
+        # Mock the db_manager method that returns the CM
+        mock.get_connection.return_value = conn_context
+
         yield cursor
 
 
