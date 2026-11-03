@@ -50,6 +50,9 @@ from .tender_line_items import (
     post_tender_line_items,
     patch_tender_line_item,
 )
+from .rich_tender_line_items import (
+    get_rich_tender_line_items,
+)
 
 __all__ = [
     "get_client",
@@ -86,4 +89,5 @@ __all__ = [
     "get_tender_line_items",
     "post_tender_line_items",
     "patch_tender_line_item",
+    "get_rich_tender_line_items",
 ]

@@ -1,4 +1,4 @@
-"""Provides method-specific routes for /labour-cost API routes."""
+"""Provides method-specific routes for /tender/line-items API routes."""
 
 from typing_extensions import Annotated
 from psycopg.sql import SQL, Identifier, Placeholder
