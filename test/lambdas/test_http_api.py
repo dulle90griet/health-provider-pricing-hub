@@ -45,6 +45,10 @@ from hub_api.models.requests import (
     UpdateClient,
     Tender,
     TenderLineItem,
+    TenderLaxList,
+    UpdateTender,
+    TenderLineItemLaxList,
+    UpdateTenderLineItem,
 )
 from hub_api.routes import (
     get_client,
@@ -73,7 +77,16 @@ from hub_api.routes import (
     get_service_slugs,
     post_service,
     patch_service,
+    get_tender,
+    get_tender_single,
+    get_tender_titles,
+    post_tender,
+    patch_tender,
+    get_tender_line_items,
+    post_tender_line_items,
+    patch_tender_line_item,
 )
+
 
 from src.lambdas.http_api import (
     logger,
@@ -85,19 +98,7 @@ from src.lambdas.http_api import (
     # SortClause,
     SortClauses,
     # Department,
-    TenderLaxList,
-    UpdateTender,
-    TenderLineItemLaxList,
-    UpdateTenderLineItem,
-    get_tender,
-    get_tender_single,
-    get_tender_titles,
-    post_tender,
-    patch_tender,
-    get_tender_line_items,
     get_rich_tender_line_items,
-    post_tender_line_items,
-    patch_tender_line_item,
 )
 
 logger.setLevel(logging.ERROR)

@@ -45,6 +45,11 @@ from .tender import (
     post_tender,
     patch_tender,
 )
+from .tender_line_items import (
+    get_tender_line_items,
+    post_tender_line_items,
+    patch_tender_line_item,
+)
 
 __all__ = [
     "get_client",
@@ -78,4 +83,7 @@ __all__ = [
     "get_tender_titles",
     "post_tender",
     "patch_tender",
+    "get_tender_line_items",
+    "post_tender_line_items",
+    "patch_tender_line_item",
 ]
