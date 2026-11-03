@@ -11,6 +11,11 @@ from .job_title import (
     post_job_title,
     patch_job_title,
 )
+from .labour_cost import (
+    get_labour_cost,
+    post_labour_cost,
+    patch_labour_cost,
+)
 from .overhead_cost import (
     get_overhead_cost,
     post_overhead_cost,
@@ -33,6 +38,9 @@ __all__ = [
     "get_job_title_titles",
     "post_job_title",
     "patch_job_title",
+    "get_labour_cost",
+    "post_labour_cost",
+    "patch_labour_cost",
     "get_overhead_cost",
     "post_overhead_cost",
     "patch_overhead_cost",

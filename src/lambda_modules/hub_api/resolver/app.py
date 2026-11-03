@@ -18,6 +18,9 @@ from hub_api.routes import (
     get_job_title_titles,
     post_job_title,
     patch_job_title,
+    get_labour_cost,
+    post_labour_cost,
+    patch_labour_cost,
     get_overhead_cost,
     post_overhead_cost,
     patch_overhead_cost,
@@ -47,10 +50,13 @@ app.route("/consumable", "GET")(get_consumable)
 app.route("/consumable/names", "GET")(get_consumable_names)
 app.route("/consumable", "POST")(post_consumable)
 app.route("/consumable/<consumable_id>", "PATCH")(patch_consumable)
+app.route("/labour-cost", "GET")(get_labour_cost)
+app.route("/labour-cost", "POST")(post_labour_cost)
+app.route("/labour-cost/<service_id>/<title_engaged_id>", "PATCH")(patch_labour_cost)
+app.route("/overhead-cost", "GET")(get_overhead_cost)
+app.route("/overhead-cost", "POST")(post_overhead_cost)
+app.route("/overhead-cost/<overhead_cost_id>", "PATCH")(patch_overhead_cost)
 app.route("/service", "GET")(get_service)
 app.route("/service/slugs", "GET")(get_service_slugs)
 app.route("/service", "POST")(post_service)
 app.route("/service/<service_id>", "PATCH")(patch_service)
-app.route("/overhead-cost", "GET")(get_overhead_cost)
-app.route("/overhead-cost", "POST")(post_overhead_cost)
-app.route("/overhead-cost/<overhead_cost_id>", "PATCH")(patch_overhead_cost)
