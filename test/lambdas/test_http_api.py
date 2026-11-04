@@ -4,7 +4,7 @@ import logging
 import random
 from copy import deepcopy
 from datetime import datetime, date
-from decimal import Decimal as Decimal
+from decimal import Decimal
 from typing import Any, Annotated, get_origin, get_args
 import functools
 from unittest.mock import patch, MagicMock, Mock
@@ -90,7 +90,7 @@ from hub_api.routes import (
     get_rich_tender_line_items,
 )
 
-from src.lambdas.http_api import logger, app
+from lambdas.http_api import logger, app
 
 logger.setLevel(logging.ERROR)
 

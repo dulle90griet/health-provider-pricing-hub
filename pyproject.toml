@@ -43,9 +43,16 @@ local-dev = [
     {include-group = "audit-fixes"},
     {include-group = "reqs-layer"},
     {include-group = "psycopg-layer"},
+    "pylint>=4.1.3",
 ]
 
 [tool.pytest.ini_options]
-markers = [
-    "disable_autouse"
-]
+markers = ["disable_autouse"]
+pythonpath = ["src"]
+
+[tool.pylint.main]
+source-roots = ["src"]
+init-hook = "import sys; sys.path.insert(0, 'src')"
+
+[tool.pyright]  # Pylance reads this
+extraPaths = ["src"]

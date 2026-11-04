@@ -4,7 +4,7 @@ import boto3
 import json
 from moto import mock_aws
 from unittest.mock import patch
-from src.lambdas.create_budibase_instance import (
+from lambdas.create_budibase_instance import (
     create_budibase_instance,
     lambda_handler,
 )
@@ -83,8 +83,8 @@ class TestCreateBudibaseInstanceFunction:
 class TestCreateBudibaseInstanceLambdaHandler:
     """Unit tests for the Lambda handler."""
 
-    @patch("src.lambdas.create_budibase_instance.create_budibase_instance")
-    @patch("src.lambdas.create_budibase_instance.boto3.client")
+    @patch("lambdas.create_budibase_instance.create_budibase_instance")
+    @patch("lambdas.create_budibase_instance.boto3.client")
     def test_lambda_handler_invokes_create_budibase_instance(
         self,
         mock_boto3_client,
@@ -98,7 +98,7 @@ class TestCreateBudibaseInstanceLambdaHandler:
 
         mock_create_budibase_instance.assert_called_once()
 
-    @patch("src.lambdas.create_budibase_instance.boto3.client")
+    @patch("lambdas.create_budibase_instance.boto3.client")
     def test_lambda_handler_returns_status_code_and_json_string(
         self, mock_boto3_client, ecs_with_cluster
     ):

@@ -1,6 +1,5 @@
 SHELL := /bin/bash
 WD := $(shell pwd)
-PYTHONPATH := $(WD):$(WD)/src:$(WD)/src/lambda_modules
 PYTHON_VERSION := $(shell grep "^requires-python" pyproject.toml | cut -d'"' -f2 | sed 's/>=//')
 PIP = pip
 
@@ -33,7 +32,7 @@ terraform-checks:
 	cd infra && terraform validate
 
 unit-tests:
-	PYTHONPATH=${PYTHONPATH} uv run pytest -v --cov=src --cov-report term-missing test/
+	uv run pytest -v --cov=src --cov-report term-missing test/
 
 all-checks: audit security-checks code-checks terraform-checks unit-tests
 

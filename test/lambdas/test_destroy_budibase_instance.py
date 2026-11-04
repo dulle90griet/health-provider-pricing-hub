@@ -4,7 +4,7 @@ import boto3
 import json
 from moto import mock_aws
 from unittest.mock import patch
-from src.lambdas.destroy_budibase_instance import (
+from lambdas.destroy_budibase_instance import (
     destroy_budibase_instance,
     lambda_handler,
 )
@@ -91,8 +91,8 @@ class TestDestroyBudibaseInstanceFunction:
 class TestDestroyBudibaseInstanceLambdaHandler:
     """Unit tests for the Lambda handler."""
 
-    @patch("src.lambdas.destroy_budibase_instance.destroy_budibase_instance")
-    @patch("src.lambdas.destroy_budibase_instance.boto3.client")
+    @patch("lambdas.destroy_budibase_instance.destroy_budibase_instance")
+    @patch("lambdas.destroy_budibase_instance.boto3.client")
     def test_lambda_handler_invokes_destroy_budibase_instance(
         self,
         mock_boto3_client,
@@ -106,7 +106,7 @@ class TestDestroyBudibaseInstanceLambdaHandler:
 
         mock_destroy_budibase_instance.assert_called_once()
 
-    @patch("src.lambdas.destroy_budibase_instance.boto3.client")
+    @patch("lambdas.destroy_budibase_instance.boto3.client")
     def test_lambda_handler_returns_status_code_and_string_json_result(
         self, mock_boto3_client, ecs_with_cluster, env_vars
     ):
