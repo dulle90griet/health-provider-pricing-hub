@@ -46,6 +46,11 @@ local-dev = [
 ]
 
 [tool.pytest.ini_options]
-markers = [
-    "disable_autouse"
-]
+markers = ["disable_autouse"]
+pythonpath = [".", "src"]
+
+[tool.pylint.main]
+source-roots = [".", "src"]
+
+[tool.pyright]  # Pylance reads this
+extraPaths = [".", "src"]
