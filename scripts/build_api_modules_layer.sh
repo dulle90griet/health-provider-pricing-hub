@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # set origin, destination and list of target modules
-ORIG="src/lambda_modules"
+ORIG="src/"
 DEST="packages/layer"
 OUT_ZIP="api_modules_layer.zip"
 MODULES=("hub_api")
