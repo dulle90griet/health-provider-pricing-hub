@@ -7,6 +7,37 @@ from hub_api.db import DatabaseCursor
 from hub_api.models.params import URIQueries, SortClauses, build_search_sql
 
 
+overhead_recovery_on_labour_cost_gbp = """
+    base.labour_cost_gbp * base.overhead_recovery_on_labour_percentage / 100
+"""
+fully_absorbed_cost_gbp = f"""
+    base.labour_cost_gbp + ({overhead_recovery_on_labour_cost_gbp}) + base.direct_cost_gbp
+"""
+profit_margin_gbp = f"""
+    ({fully_absorbed_cost_gbp})
+    / (1 - (base.required_profit_margin_percentage / 100))
+    * (base.required_profit_margin_percentage / 100)
+"""
+recommended_unit_price_gbp = f"""
+    ({fully_absorbed_cost_gbp}) + ({profit_margin_gbp})
+"""
+unit_price_to_use = """
+    COALESCE(base.unit_price_override_gbp, base.our_current_unit_price_gbp)
+"""
+annual_sales_gbp = f"({unit_price_to_use}) * base.total_number_pa"
+annual_labour_gbp = "base.labour_cost_gbp * base.total_number_pa"
+annual_direct_gbp = "base.direct_cost_gbp * base.total_number_pa"
+annual_overhead_gbp = (
+    f"({overhead_recovery_on_labour_cost_gbp}) * base.total_number_pa"
+)
+annual_total_gbp = f"""
+    ({annual_labour_gbp}) + ({annual_direct_gbp}) + ({annual_overhead_gbp})
+"""
+annual_profit_gbp = f"""
+    ({annual_sales_gbp}) - ({annual_total_gbp})
+"""
+
+
 # @app.get("/tender/line-items/rich/<tender_id>")
 def get_rich_tender_line_items(
     tender_id: str,
@@ -18,36 +49,6 @@ def get_rich_tender_line_items(
     page = max(int(queries.page), 1)
     per_page = min(max(int(queries.per_page), 1), max_per_page)
     offset = per_page * (page - 1)
-
-    overhead_recovery_on_labour_cost_gbp = """
-        base.labour_cost_gbp * base.overhead_recovery_on_labour_percentage / 100
-    """
-    fully_absorbed_cost_gbp = f"""
-        base.labour_cost_gbp + ({overhead_recovery_on_labour_cost_gbp}) + base.direct_cost_gbp
-    """
-    profit_margin_gbp = f"""
-        ({fully_absorbed_cost_gbp})
-        / (1 - (base.required_profit_margin_percentage / 100))
-        * (base.required_profit_margin_percentage / 100)
-    """
-    recommended_unit_price_gbp = f"""
-        ({fully_absorbed_cost_gbp}) + ({profit_margin_gbp})
-    """
-    unit_price_to_use = """
-        COALESCE(base.unit_price_override_gbp, base.our_current_unit_price_gbp)
-    """
-    annual_sales_gbp = f"({unit_price_to_use}) * base.total_number_pa"
-    annual_labour_gbp = "base.labour_cost_gbp * base.total_number_pa"
-    annual_direct_gbp = "base.direct_cost_gbp * base.total_number_pa"
-    annual_overhead_gbp = (
-        f"({overhead_recovery_on_labour_cost_gbp}) * base.total_number_pa"
-    )
-    annual_total_gbp = f"""
-        ({annual_labour_gbp}) + ({annual_direct_gbp}) + ({annual_overhead_gbp})
-    """
-    annual_profit_gbp = f"""
-        ({annual_sales_gbp}) - ({annual_total_gbp})
-    """
 
     valid_search_columns = [
         "base.service_category",
@@ -173,6 +174,90 @@ def get_rich_tender_line_items(
 
     with DatabaseCursor() as cursor:
         cursor.execute(get_rich_line_items_sql)
+        results = cursor.fetchall()
+
+    return results
+
+
+# @app.get("/tender/line-items/rich/totals")
+def get_rich_tender_line_items_totals(tender_id: str) -> list:
+    get_totals_sql = SQL(f"""
+        WITH
+            tender_line_items_filtered AS (
+                SELECT *
+                FROM tenders_services
+                WHERE tender_id = {{tender_id}}
+            )
+            ,labour_costs_summed AS (
+                SELECT
+                    lc.service_id
+                    ,SUM(jt.hourly_rate_gbp * lc.required_time_mins / 60)
+                        AS total_cost_gbp
+                FROM labour_cost lc
+                LEFT OUTER JOIN job_title jt
+                    ON lc.title_engaged_id = jt.id
+                WHERE lc.service_id
+                    IN (SELECT service_id FROM tender_line_items_filtered)
+                GROUP BY service_id
+            )
+            ,direct_costs_summed AS (
+                SELECT
+                    service_id
+                    ,SUM(cost_gbp) AS total_cost_gbp
+                FROM direct_cost
+                WHERE service_id
+                    IN (SELECT service_id FROM tender_line_items_filtered)
+                GROUP BY service_id
+            )
+            ,base AS (
+                SELECT
+                    ft.tender_id
+                    ,t.tender_title
+                    ,ft.total_number_pa
+                    ,COALESCE(lc.total_cost_gbp, 0) AS labour_cost_gbp
+                    ,200 AS overhead_recovery_on_labour_percentage
+                    ,COALESCE(dc.total_cost_gbp, 0) AS direct_cost_gbp
+                    ,s.our_current_unit_price_gbp
+                    ,ft.unit_price_override_gbp
+                FROM tender_line_items_filtered ft
+                LEFT OUTER JOIN tender t
+                    ON ft.tender_id = t.id
+                LEFT OUTER JOIN service s
+                    ON ft.service_id = s.id
+                LEFT OUTER JOIN labour_costs_summed lc
+                    ON ft.service_id = lc.service_id
+                LEFT OUTER JOIN direct_costs_summed dc
+                    ON ft.service_id = dc.service_id
+            )
+            ,sums AS (
+                SELECT
+                    COALESCE(SUM({annual_sales_gbp}), 0) AS total_annual_sales_gbp
+                    ,COALESCE(SUM({annual_labour_gbp}), 0) AS total_annual_labour_gbp
+                    ,COALESCE(SUM({annual_direct_gbp}), 0) AS total_annual_direct_gbp
+                    ,COALESCE(SUM({annual_overhead_gbp}), 0) AS total_annual_overhead_gbp
+                    ,COALESCE(SUM({annual_total_gbp}), 0) AS total_annual_total_gbp
+                    ,COALESCE(SUM({annual_profit_gbp}), 0) AS total_annual_profit_gbp
+                FROM base
+            )
+        SELECT
+            t.tender_id
+            ,t.tender_title
+            ,ROUND(s.total_annual_sales_gbp, 4) AS total_annual_sales_gbp
+            ,ROUND(s.total_annual_labour_gbp, 4) AS total_annual_labour_gbp
+            ,ROUND(s.total_annual_direct_gbp, 4) AS total_annual_direct_gbp
+            ,ROUND(s.total_annual_overhead_gbp, 4) AS total_annual_overhead_gbp
+            ,ROUND(s.total_annual_total_gbp, 4) AS total_annual_total_gbp
+            ,ROUND(s.total_annual_profit_gbp, 4) AS total_annual_profit_gbp
+        FROM
+            sums
+        LEFT OUTER JOIN tender t
+            ON t.id = {{tender_id}}
+    """).format(
+        tender_id=tender_id,
+    )
+
+    with DatabaseCursor() as cursor:
+        cursor.execute(get_totals_sql)
         results = cursor.fetchall()
 
     return results
