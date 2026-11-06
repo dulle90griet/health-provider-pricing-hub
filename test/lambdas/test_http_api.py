@@ -1374,6 +1374,26 @@ class TestGetHandlersSQLReflectsParams:
         )
         assert args[1] == expected_params
 
+    # ── GET /tender/line-items/<tender_id>/totals ───────────
+    @pytest.mark.parametrize("tender_id", [(999), (PSQL_INT_LIMIT)])
+    def test_tender_line_items_totals_SQL_reflects_id_param(
+        self, mock_cursor, tender_id
+    ):
+        expected_sql_phrases = [
+            "SELECT",
+            "FROM tenders_services",
+            f"WHERE tender_id = {tender_id}",
+            "SELECT",
+            "FROM sums",
+            "LEFT OUTER JOIN tender t",
+            f"ON t.id = {tender_id}",
+        ]
+        get_rich_tender_line_items_totals(tender_id)
+        args = mock_cursor.execute.call_args[0]
+        assert_sql_contains(
+            args[0].as_string(), *expected_sql_phrases, in_order=True
+        )
+
 
 # ══════════════════════════════════════════════════════════════════
 # POST/PATCH SQL reflects request body as expected

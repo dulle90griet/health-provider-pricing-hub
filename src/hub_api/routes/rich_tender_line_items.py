@@ -248,8 +248,7 @@ def get_rich_tender_line_items_totals(tender_id: str) -> list:
             ,ROUND(s.total_annual_overhead_gbp, 4) AS total_annual_overhead_gbp
             ,ROUND(s.total_annual_total_gbp, 4) AS total_annual_total_gbp
             ,ROUND(s.total_annual_profit_gbp, 4) AS total_annual_profit_gbp
-        FROM
-            sums
+        FROM sums
         LEFT OUTER JOIN tender t
             ON t.id = {{tender_id}}
     """).format(
