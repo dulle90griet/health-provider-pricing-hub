@@ -590,66 +590,60 @@ class TestGetHandlersReturnCursorRows:
         self, mock_cursor, handler, row
     ):
         tender_id = PSQL_INT_LIMIT
-        # row = {
-        #     "id": PSQL_INT_LIMIT,
-        #     "tender_title": "A" * 50,
-        #     "client_id": PSQL_INT_LIMIT,
-        #     "projected_sales_value_gbp": PSQL_INT_LIMIT,
-        #     "date_created": datetime(
-        #         9999, 12, 31
-        #     ),  # limit of Python datetime, not PSQL timestamp
-        # }
-        mock_cursor.fetchall.return_value = row
         orig_row = deepcopy(row)
+        mock_cursor.fetchall.return_value = row
         assert handler(tender_id) == orig_row
 
-    def test_tender_line_items_returns_cursor_row_in_boundary_case(self, mock_cursor):
-        rows = [
-            {
-                "tender_id": 1,
-                "tender_title": "T" * 50,
-                "service_id": 2,
-                "service": "S" * 75,
-                "total_number_pa": 999999,
-                "unit_price_override_gbp": Decimal("999999.99"),
-            }
-        ]
-        orig_rows = deepcopy(rows)
-        mock_cursor.fetchall.return_value = rows
-        assert get_tender_line_items("1", URIQueries(), []) == orig_rows
-
-    def test_rich_tender_line_items_returns_cursor_row_in_boundary_case(
-        self, mock_cursor
+    @pytest.mark.parametrize(
+        "handler, row",
+        [
+            (
+                get_tender_line_items,
+                {
+                    "tender_id": PSQL_INT_LIMIT,
+                    "tender_title": "T" * 50,
+                    "service_id": PSQL_INT_LIMIT,
+                    "service": "S" * 75,
+                    "total_number_pa": PSQL_INT_LIMIT,
+                    "unit_price_override_gbp": Decimal("999999.99"),
+                },
+            ),
+            (
+                get_rich_tender_line_items,
+                {
+                    "tender_id": PSQL_INT_LIMIT,
+                    "tender_title": "A" * 50,
+                    "service_category": "A" * 50,
+                    "service_id": PSQL_INT_LIMIT,
+                    "service": "A" * 75,
+                    "total_number_pa": PSQL_INT_LIMIT,
+                    "unit_labour_cost_gbp": Decimal("999999.99"),
+                    "overhead_recovery_on_labour_percentage": PSQL_INT_LIMIT,
+                    "overhead_recovery_on_labour_cost_gbp": Decimal("999999.99"),
+                    "unit_direct_cost_gbp": Decimal("999.99"),
+                    "fully_absorbed_cost_gbp": Decimal("999999.99"),
+                    "required_profit_margin_percentage": Decimal("99.99"),
+                    "profit_margin_gbp": Decimal("999999.99"),
+                    "recommended_unit_price_gbp": Decimal("999999.99"),
+                    "our_current_unit_price_gbp": Decimal("999999.99"),
+                    "tender_override_hourly_price_gbp": Decimal("999999.99"),
+                    "annual_sales_gbp": Decimal("10000000000.00"),
+                    "annual_labour_gbp": Decimal("10000000000.00"),
+                    "annual_direct_gbp": Decimal("10000000000.00"),
+                    "annual_overhead_gbp": Decimal("10000000000.00"),
+                    "annual_total_gbp": Decimal("10000000000.00"),
+                    "annual_profit_gbp": Decimal("-10000000000.00"),
+                }
+            ),
+        ],
+    )
+    def test_pathed_queries_handlers_return_cursor_row_in_boundary_case(
+        self, mock_cursor, handler, row
     ):
-        rows = [
-            {
-                "tender_id": 1,
-                "tender_title": "A" * 50,
-                "service_category": "A" * 50,
-                "service_id": 2147483647,
-                "service": "A" * 75,
-                "total_number_pa": 2147483647,
-                "unit_labour_cost_gbp": Decimal("999999.99"),
-                "overhead_recovery_on_labour_percentage": 2147483647,
-                "overhead_recovery_on_labour_cost_gbp": Decimal("999999.99"),
-                "unit_direct_cost_gbp": Decimal("999.99"),
-                "fully_absorbed_cost_gbp": Decimal("999999.99"),
-                "required_profit_margin_percentage": Decimal("99.99"),
-                "profit_margin_gbp": Decimal("999999.99"),
-                "recommended_unit_price_gbp": Decimal("999999.99"),
-                "our_current_unit_price_gbp": Decimal("999999.99"),
-                "tender_override_hourly_price_gbp": Decimal("999999.99"),
-                "annual_sales_gbp": Decimal("10000000000.00"),
-                "annual_labour_gbp": Decimal("10000000000.00"),
-                "annual_direct_gbp": Decimal("10000000000.00"),
-                "annual_overhead_gbp": Decimal("10000000000.00"),
-                "annual_total_gbp": Decimal("10000000000.00"),
-                "annual_profit_gbp": Decimal("-10000000000.00"),
-            }
-        ]
-        orig_rows = deepcopy(rows)
-        mock_cursor.fetchall.return_value = rows
-        assert get_rich_tender_line_items(1, URIQueries(), []) == orig_rows
+        tender_id = PSQL_INT_LIMIT
+        orig_row = deepcopy(row)
+        mock_cursor.fetchall.return_value = row
+        assert handler(tender_id, URIQueries(), []) == orig_row
 
 
 # ══════════════════════════════════════════════════════════════════
