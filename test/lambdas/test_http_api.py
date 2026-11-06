@@ -88,6 +88,7 @@ from hub_api.routes import (
     post_tender_line_items,
     patch_tender_line_item,
     get_rich_tender_line_items,
+    get_rich_tender_line_items_totals,
 )
 
 from lambdas.http_api import logger, app
@@ -105,6 +106,9 @@ settings.load_profile("this_module")
 
 
 # ── Constants ─────────────────────────────────────────────────────
+PSQL_INT_LIMIT = 2**31 - 1
+PSQL_NUMERIC_IMPLEMENTATION_LIMIT = "9" * 131072 + "." + "9" * 16383
+
 GET_HANDLERS_NO_PATH_NO_QUERY = [
     get_department,
     get_job_title_titles,
@@ -127,6 +131,7 @@ GET_HANDLERS_NO_PATH_WITH_QUERY = [
 
 GET_HANDLERS_WITH_PATH_NO_QUERY = [
     get_tender_single,
+    get_rich_tender_line_items_totals,
 ]
 
 GET_HANDLERS_WITH_PATH_WITH_QUERY = [
@@ -166,6 +171,7 @@ GET_HANDLER_TYPES = {
     get_tender_single: TYPES[2],
     get_tender_line_items: TYPES[3],
     get_rich_tender_line_items: TYPES[3],
+    get_rich_tender_line_items_totals: TYPES[2],
 }
 
 GET_HANDLERS_WITH_CUSTOM_SORT_NO_PATH = [
@@ -550,20 +556,52 @@ class TestGetHandlersReturnCursorRows:
         else:
             assert handler() == orig_rows
 
-    def test_tender_single_returns_cursor_row_with_boundary_values(self, mock_cursor):
-        tender_id = 2**31 - 1
-        row = {
-            "id": 2**31 - 1,
-            "tender_title": "A" * 50,
-            "client_id": 2**31 - 1,
-            "projected_sales_value_gbp": 2**31 - 1,
-            "date_created": datetime(
-                9999, 12, 31
-            ),  # limit of Python datetime, not PSQL timestamp
-        }
+    @pytest.mark.parametrize(
+        "handler, row",
+        [
+            (
+                get_tender_single,
+                {
+                    "id": PSQL_INT_LIMIT,
+                    "tender_title": "A" * 50,
+                    "client_id": PSQL_INT_LIMIT,
+                    "projected_sales_value_gbp": PSQL_INT_LIMIT,
+                    "date_created": datetime(
+                        9999, 12, 31
+                    ),  # limit of Python datetime, not PSQL timestamp
+                },
+            ),
+            (
+                get_rich_tender_line_items_totals,
+                {
+                    "tender_id": PSQL_INT_LIMIT,
+                    "tender_title": "A" * 50,
+                    "total_annual_sales_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_labour_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_direct_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_overhead_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_total_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_profit_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                },
+            )
+        ],
+    )
+    def test_pathed_queryless_handlers_return_cursor_row_with_boundary_values(
+        self, mock_cursor, handler, row
+    ):
+        tender_id = PSQL_INT_LIMIT
+        # row = {
+        #     "id": PSQL_INT_LIMIT,
+        #     "tender_title": "A" * 50,
+        #     "client_id": PSQL_INT_LIMIT,
+        #     "projected_sales_value_gbp": PSQL_INT_LIMIT,
+        #     "date_created": datetime(
+        #         9999, 12, 31
+        #     ),  # limit of Python datetime, not PSQL timestamp
+        # }
         mock_cursor.fetchall.return_value = row
         orig_row = deepcopy(row)
-        assert get_tender_single(tender_id) == orig_row
+        assert handler(tender_id) == orig_row
 
     def test_tender_line_items_returns_cursor_row_in_boundary_case(self, mock_cursor):
         rows = [
@@ -1323,7 +1361,7 @@ class TestGetHandlersSQLReflectsParams:
             (10, [10]),
             (999, [999]),
             (102345, [102345]),
-            (2**31 - 1, [2**31 - 1]),
+            (PSQL_INT_LIMIT, [PSQL_INT_LIMIT]),
         ],
     )
     def test_tender_single_SQL_reflects_id_param(
