@@ -54,5 +54,5 @@ pythonpath = ["src"]
 source-roots = ["src"]
 init-hook = "import sys; sys.path.insert(0, 'src')"
 
-[tool.pyright]  # Pylance reads this
-extraPaths = ["src"]
+# [tool.pyright]  # Pylance reads this
+# extraPaths = ["src"]

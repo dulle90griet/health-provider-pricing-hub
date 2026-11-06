@@ -27,9 +27,7 @@ unit_price_to_use = """
 annual_sales_gbp = f"({unit_price_to_use}) * base.total_number_pa"
 annual_labour_gbp = "base.labour_cost_gbp * base.total_number_pa"
 annual_direct_gbp = "base.direct_cost_gbp * base.total_number_pa"
-annual_overhead_gbp = (
-    f"({overhead_recovery_on_labour_cost_gbp}) * base.total_number_pa"
-)
+annual_overhead_gbp = f"({overhead_recovery_on_labour_cost_gbp}) * base.total_number_pa"
 annual_total_gbp = f"""
     ({annual_labour_gbp}) + ({annual_direct_gbp}) + ({annual_overhead_gbp})
 """

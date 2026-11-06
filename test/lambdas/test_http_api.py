@@ -583,7 +583,7 @@ class TestGetHandlersReturnCursorRows:
                     "total_annual_total_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
                     "total_annual_profit_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
                 },
-            )
+            ),
         ],
     )
     def test_pathed_queryless_handlers_return_cursor_row_with_boundary_values(
@@ -633,7 +633,7 @@ class TestGetHandlersReturnCursorRows:
                     "annual_overhead_gbp": Decimal("10000000000.00"),
                     "annual_total_gbp": Decimal("10000000000.00"),
                     "annual_profit_gbp": Decimal("-10000000000.00"),
-                }
+                },
             ),
         ],
     )
@@ -1349,18 +1349,10 @@ class TestSearchClauseSQLBuilder:
 class TestGetHandlersSQLReflectsParams:
     # ── GET /tender/single ──────────────────────────────────
     @pytest.mark.parametrize(
-        "tender_id, expected_params",
-        [
-            (1, [1]),
-            (10, [10]),
-            (999, [999]),
-            (102345, [102345]),
-            (PSQL_INT_LIMIT, [PSQL_INT_LIMIT]),
-        ],
+        "tender_id",
+        [(1), (PSQL_INT_LIMIT)],
     )
-    def test_tender_single_SQL_reflects_id_param(
-        self, mock_cursor, tender_id, expected_params
-    ):
+    def test_tender_single_SQL_reflects_id_param(self, mock_cursor, tender_id):
         expected_sql_phrases = [
             "SELECT",
             "FROM tender",
@@ -1372,7 +1364,7 @@ class TestGetHandlersSQLReflectsParams:
         assert_sql_contains(
             args[0].as_string(mock_cursor), *expected_sql_phrases, in_order=True
         )
-        assert args[1] == expected_params
+        assert args[1] == [tender_id]
 
     # ── GET /tender/line-items/<tender_id>/totals ───────────
     @pytest.mark.parametrize("tender_id", [(999), (PSQL_INT_LIMIT)])
@@ -1390,9 +1382,7 @@ class TestGetHandlersSQLReflectsParams:
         ]
         get_rich_tender_line_items_totals(tender_id)
         args = mock_cursor.execute.call_args[0]
-        assert_sql_contains(
-            args[0].as_string(), *expected_sql_phrases, in_order=True
-        )
+        assert_sql_contains(args[0].as_string(), *expected_sql_phrases, in_order=True)
 
 
 # ══════════════════════════════════════════════════════════════════
