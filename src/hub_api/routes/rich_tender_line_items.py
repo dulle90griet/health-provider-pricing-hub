@@ -179,7 +179,7 @@ def get_rich_tender_line_items(
     return results
 
 
-# @app.get("/tender/line-items/rich/totals")
+# @app.get("/tender/line-items/<tender_id>/totals")
 def get_rich_tender_line_items_totals(tender_id: str) -> list:
     get_totals_sql = SQL(f"""
         WITH
