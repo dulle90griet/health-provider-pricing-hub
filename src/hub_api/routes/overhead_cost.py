@@ -92,7 +92,7 @@ def post_overhead_cost(body: Annotated[OverheadCostLaxList, Body()]) -> None:
 
 # @app.patch("/overhead-cost/<overhead_cost_id>")
 def patch_overhead_cost(
-    overhead_cost_id: str, body: Annotated[UpdateOverheadCost, Body()]
+    overhead_cost_id: int, body: Annotated[UpdateOverheadCost, Body()]
 ) -> None:
     """PATCH method for overhead_cost table"""
     logger.info("PATCHing overhead_cost ID: %s", overhead_cost_id)

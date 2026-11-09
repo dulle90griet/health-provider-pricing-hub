@@ -129,7 +129,7 @@ def post_job_title(body: Annotated[JobTitleLaxList, Body()]) -> None:
 
 
 # @app.patch("/job-title/<job_title_id>")
-def patch_job_title(job_title_id: str, body: Annotated[UpdateJobTitle, Body()]) -> None:
+def patch_job_title(job_title_id: int, body: Annotated[UpdateJobTitle, Body()]) -> None:
     """PATCH method for job_title table"""
     logger.info("PATCHing job title ID: %s", job_title_id)
     logger.info(body)

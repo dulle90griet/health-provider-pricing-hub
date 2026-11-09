@@ -105,7 +105,7 @@ def post_consumable(body: Annotated[ConsumableLaxList, Body()]) -> None:
 
 # @app.patch("/consumable/<consumable_id>")
 def patch_consumable(
-    consumable_id: str, body: Annotated[UpdateConsumable, Body()]
+    consumable_id: int, body: Annotated[UpdateConsumable, Body()]
 ) -> None:
     """PATCH method for consumable table"""
 

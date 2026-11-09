@@ -146,7 +146,7 @@ def post_tender(body: Annotated[TenderLaxList, Body()]) -> None:
 
 
 # @app.patch("/tender/<tender_id>")
-def patch_tender(tender_id: str, body: Annotated[UpdateTender, Body()]) -> None:
+def patch_tender(tender_id: int, body: Annotated[UpdateTender, Body()]) -> None:
     """PATCH method for tender table"""
     logger.info("PATCHing tender ID: %s", tender_id)
     logger.info(body)

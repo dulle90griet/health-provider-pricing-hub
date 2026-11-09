@@ -131,7 +131,7 @@ def post_service(body: Annotated[ServiceLaxList, Body()]) -> None:
 
 
 # @app.patch("/service/<service_id>")
-def patch_service(service_id: str, body: Annotated[UpdateService, Body()]) -> None:
+def patch_service(service_id: int, body: Annotated[UpdateService, Body()]) -> None:
     """PATCH method for service table"""
     logger.info("PATCHing service ID: %s", service_id)
     logger.info(body)
