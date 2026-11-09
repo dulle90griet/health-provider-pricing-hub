@@ -38,7 +38,7 @@ annual_profit_gbp = f"""
 
 # @app.get("/tender/line-items/rich/<tender_id>")
 def get_rich_tender_line_items(
-    tender_id: str,
+    tender_id: int,
     queries: Annotated[URIQueries, Query()],
     sort: Annotated[list[str], Query()] = "",
 ) -> list:

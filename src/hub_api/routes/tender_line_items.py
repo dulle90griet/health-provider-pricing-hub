@@ -11,7 +11,7 @@ from hub_api.models.requests import TenderLineItemLaxList, UpdateTenderLineItem
 
 # @app.get("/tender/line-items/<tender_id>")
 def get_tender_line_items(
-    tender_id: str,
+    tender_id: int,
     queries: Annotated[URIQueries, Query()],
     sort: Annotated[list[str], Query()] = "",
 ) -> list:
