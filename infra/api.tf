@@ -64,6 +64,7 @@ resource "aws_apigatewayv2_route" "http_api_routes" {
     "GET /tender/line-items/rich/{tender_id}",
     "POST /tender/line-items",
     "PATCH /tender/line-items/{tender_id}/{service_id}",
+    "GET /tender/line-items/{tender_id}/totals",
   ])
 
   api_id    = aws_apigatewayv2_api.http_api.id

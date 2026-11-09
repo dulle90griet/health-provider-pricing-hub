@@ -88,6 +88,7 @@ from hub_api.routes import (
     post_tender_line_items,
     patch_tender_line_item,
     get_rich_tender_line_items,
+    get_rich_tender_line_items_totals,
 )
 
 from lambdas.http_api import logger, app
@@ -105,6 +106,9 @@ settings.load_profile("this_module")
 
 
 # ── Constants ─────────────────────────────────────────────────────
+PSQL_INT_LIMIT = 2**31 - 1
+PSQL_NUMERIC_IMPLEMENTATION_LIMIT = "9" * 131072 + "." + "9" * 16383
+
 GET_HANDLERS_NO_PATH_NO_QUERY = [
     get_department,
     get_job_title_titles,
@@ -127,6 +131,7 @@ GET_HANDLERS_NO_PATH_WITH_QUERY = [
 
 GET_HANDLERS_WITH_PATH_NO_QUERY = [
     get_tender_single,
+    get_rich_tender_line_items_totals,
 ]
 
 GET_HANDLERS_WITH_PATH_WITH_QUERY = [
@@ -166,6 +171,7 @@ GET_HANDLER_TYPES = {
     get_tender_single: TYPES[2],
     get_tender_line_items: TYPES[3],
     get_rich_tender_line_items: TYPES[3],
+    get_rich_tender_line_items_totals: TYPES[2],
 }
 
 GET_HANDLERS_WITH_CUSTOM_SORT_NO_PATH = [
@@ -550,68 +556,94 @@ class TestGetHandlersReturnCursorRows:
         else:
             assert handler() == orig_rows
 
-    def test_tender_single_returns_cursor_row_with_boundary_values(self, mock_cursor):
-        tender_id = 2**31 - 1
-        row = {
-            "id": 2**31 - 1,
-            "tender_title": "A" * 50,
-            "client_id": 2**31 - 1,
-            "projected_sales_value_gbp": 2**31 - 1,
-            "date_created": datetime(
-                9999, 12, 31
-            ),  # limit of Python datetime, not PSQL timestamp
-        }
-        mock_cursor.fetchall.return_value = row
-        orig_row = deepcopy(row)
-        assert get_tender_single(tender_id) == orig_row
-
-    def test_tender_line_items_returns_cursor_row_in_boundary_case(self, mock_cursor):
-        rows = [
-            {
-                "tender_id": 1,
-                "tender_title": "T" * 50,
-                "service_id": 2,
-                "service": "S" * 75,
-                "total_number_pa": 999999,
-                "unit_price_override_gbp": Decimal("999999.99"),
-            }
-        ]
-        orig_rows = deepcopy(rows)
-        mock_cursor.fetchall.return_value = rows
-        assert get_tender_line_items("1", URIQueries(), []) == orig_rows
-
-    def test_rich_tender_line_items_returns_cursor_row_in_boundary_case(
-        self, mock_cursor
+    @pytest.mark.parametrize(
+        "handler, row",
+        [
+            (
+                get_tender_single,
+                {
+                    "id": PSQL_INT_LIMIT,
+                    "tender_title": "A" * 50,
+                    "client_id": PSQL_INT_LIMIT,
+                    "projected_sales_value_gbp": PSQL_INT_LIMIT,
+                    "date_created": datetime(
+                        9999, 12, 31
+                    ),  # limit of Python datetime, not PSQL timestamp
+                },
+            ),
+            (
+                get_rich_tender_line_items_totals,
+                {
+                    "tender_id": PSQL_INT_LIMIT,
+                    "tender_title": "A" * 50,
+                    "total_annual_sales_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_labour_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_direct_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_overhead_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_total_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                    "total_annual_profit_gbp": PSQL_NUMERIC_IMPLEMENTATION_LIMIT,
+                },
+            ),
+        ],
+    )
+    def test_pathed_queryless_handlers_return_cursor_row_with_boundary_values(
+        self, mock_cursor, handler, row
     ):
-        rows = [
-            {
-                "tender_id": 1,
-                "tender_title": "A" * 50,
-                "service_category": "A" * 50,
-                "service_id": 2147483647,
-                "service": "A" * 75,
-                "total_number_pa": 2147483647,
-                "unit_labour_cost_gbp": Decimal("999999.99"),
-                "overhead_recovery_on_labour_percentage": 2147483647,
-                "overhead_recovery_on_labour_cost_gbp": Decimal("999999.99"),
-                "unit_direct_cost_gbp": Decimal("999.99"),
-                "fully_absorbed_cost_gbp": Decimal("999999.99"),
-                "required_profit_margin_percentage": Decimal("99.99"),
-                "profit_margin_gbp": Decimal("999999.99"),
-                "recommended_unit_price_gbp": Decimal("999999.99"),
-                "our_current_unit_price_gbp": Decimal("999999.99"),
-                "tender_override_hourly_price_gbp": Decimal("999999.99"),
-                "annual_sales_gbp": Decimal("10000000000.00"),
-                "annual_labour_gbp": Decimal("10000000000.00"),
-                "annual_direct_gbp": Decimal("10000000000.00"),
-                "annual_overhead_gbp": Decimal("10000000000.00"),
-                "annual_total_gbp": Decimal("10000000000.00"),
-                "annual_profit_gbp": Decimal("-10000000000.00"),
-            }
-        ]
-        orig_rows = deepcopy(rows)
-        mock_cursor.fetchall.return_value = rows
-        assert get_rich_tender_line_items(1, URIQueries(), []) == orig_rows
+        tender_id = PSQL_INT_LIMIT
+        orig_row = deepcopy(row)
+        mock_cursor.fetchall.return_value = row
+        assert handler(tender_id) == orig_row
+
+    @pytest.mark.parametrize(
+        "handler, row",
+        [
+            (
+                get_tender_line_items,
+                {
+                    "tender_id": PSQL_INT_LIMIT,
+                    "tender_title": "T" * 50,
+                    "service_id": PSQL_INT_LIMIT,
+                    "service": "S" * 75,
+                    "total_number_pa": PSQL_INT_LIMIT,
+                    "unit_price_override_gbp": Decimal("999999.99"),
+                },
+            ),
+            (
+                get_rich_tender_line_items,
+                {
+                    "tender_id": PSQL_INT_LIMIT,
+                    "tender_title": "A" * 50,
+                    "service_category": "A" * 50,
+                    "service_id": PSQL_INT_LIMIT,
+                    "service": "A" * 75,
+                    "total_number_pa": PSQL_INT_LIMIT,
+                    "unit_labour_cost_gbp": Decimal("999999.99"),
+                    "overhead_recovery_on_labour_percentage": PSQL_INT_LIMIT,
+                    "overhead_recovery_on_labour_cost_gbp": Decimal("999999.99"),
+                    "unit_direct_cost_gbp": Decimal("999.99"),
+                    "fully_absorbed_cost_gbp": Decimal("999999.99"),
+                    "required_profit_margin_percentage": Decimal("99.99"),
+                    "profit_margin_gbp": Decimal("999999.99"),
+                    "recommended_unit_price_gbp": Decimal("999999.99"),
+                    "our_current_unit_price_gbp": Decimal("999999.99"),
+                    "tender_override_hourly_price_gbp": Decimal("999999.99"),
+                    "annual_sales_gbp": Decimal("10000000000.00"),
+                    "annual_labour_gbp": Decimal("10000000000.00"),
+                    "annual_direct_gbp": Decimal("10000000000.00"),
+                    "annual_overhead_gbp": Decimal("10000000000.00"),
+                    "annual_total_gbp": Decimal("10000000000.00"),
+                    "annual_profit_gbp": Decimal("-10000000000.00"),
+                },
+            ),
+        ],
+    )
+    def test_pathed_queries_handlers_return_cursor_row_in_boundary_case(
+        self, mock_cursor, handler, row
+    ):
+        tender_id = PSQL_INT_LIMIT
+        orig_row = deepcopy(row)
+        mock_cursor.fetchall.return_value = row
+        assert handler(tender_id, URIQueries(), []) == orig_row
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1317,18 +1349,10 @@ class TestSearchClauseSQLBuilder:
 class TestGetHandlersSQLReflectsParams:
     # ── GET /tender/single ──────────────────────────────────
     @pytest.mark.parametrize(
-        "tender_id, expected_params",
-        [
-            (1, [1]),
-            (10, [10]),
-            (999, [999]),
-            (102345, [102345]),
-            (2**31 - 1, [2**31 - 1]),
-        ],
+        "tender_id",
+        [(1), (PSQL_INT_LIMIT)],
     )
-    def test_tender_single_SQL_reflects_id_param(
-        self, mock_cursor, tender_id, expected_params
-    ):
+    def test_tender_single_SQL_reflects_id_param(self, mock_cursor, tender_id):
         expected_sql_phrases = [
             "SELECT",
             "FROM tender",
@@ -1340,7 +1364,25 @@ class TestGetHandlersSQLReflectsParams:
         assert_sql_contains(
             args[0].as_string(mock_cursor), *expected_sql_phrases, in_order=True
         )
-        assert args[1] == expected_params
+        assert args[1] == [tender_id]
+
+    # ── GET /tender/line-items/<tender_id>/totals ───────────
+    @pytest.mark.parametrize("tender_id", [(999), (PSQL_INT_LIMIT)])
+    def test_tender_line_items_totals_SQL_reflects_id_param(
+        self, mock_cursor, tender_id
+    ):
+        expected_sql_phrases = [
+            "SELECT",
+            "FROM tenders_services",
+            f"WHERE tender_id = {tender_id}",
+            "SELECT",
+            "FROM sums",
+            "LEFT OUTER JOIN tender t",
+            f"ON t.id = {tender_id}",
+        ]
+        get_rich_tender_line_items_totals(tender_id)
+        args = mock_cursor.execute.call_args[0]
+        assert_sql_contains(args[0].as_string(), *expected_sql_phrases, in_order=True)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -2008,6 +2050,65 @@ class TestPatchHandlersSQLAndParamsReflectBody:
             args[0].as_string(mock_cursor), *expected_sql_phrases, in_order=True
         )
         assert args[1] == expected_params
+
+
+# ══════════════════════════════════════════════════════════════════
+# Handlers handle invalid path parameters gracefully
+# ══════════════════════════════════════════════════════════════════
+class TestAPIResolverWithInvalidPathParameters:
+    @pytest.mark.disable_autouse
+    @pytest.mark.parametrize(
+        "method, path, bad_field",
+        [
+            ("GET", "/tender/single/%s", "tender_id"),
+            ("GET", "/tender/line-items/%s", "tender_id"),
+            ("GET", "/tender/line-items/rich/%s", "tender_id"),
+            ("GET", "/tender/line-items/%s/totals", "tender_id"),
+            ("PATCH", "/job-title/%s", "job_title_id"),
+            ("PATCH", "/consumable/%s", "consumable_id"),
+            ("PATCH", "/service/%s", "service_id"),
+            ("PATCH", "/overhead-cost/%s", "overhead_cost_id"),
+            ("PATCH", "/labour-cost/%s/1", "service_id"),
+            ("PATCH", "/labour-cost/1/%s", "title_engaged_id"),
+            ("PATCH", "/direct-cost/%s/1", "service_id"),
+            ("PATCH", "/direct-cost/1/%s", "consumable_id"),
+            ("PATCH", "/client/%s", "client_id"),
+            ("PATCH", "/tender/%s", "tender_id"),
+            ("PATCH", "/tender/line-items/%s/1", "tender_id"),
+            ("PATCH", "/tender/line-items/1/%s", "service_id"),
+        ],
+    )
+    def test_non_numeric_get_path_ids_return_422(
+        self, mock_cursor, method, path, bad_field
+    ):
+        # NB that for PATCH routes, this test relies on the invalid path ID
+        # throwing an error before the invalid (missing) body does. If that
+        # changes, the test will need to provide a specialized body per PATCH.
+
+        invalid_path = path % "NaN"
+        test_event = {
+            "version": "2.0",
+            "routeKey": f"{method} {invalid_path}",
+            "rawPath": invalid_path,
+            "rawQueryString": "",
+            "queryStringParameters": None,
+            "headers": {"Content-Type": "application/json"},
+            "requestContext": {
+                "http": {
+                    "method": method,
+                    "path": invalid_path,
+                },
+                "stage": "$default",
+            },
+            "body": None,
+            "isBase64Encoded": False,
+        }
+        test_context = MagicMock()
+        test_context.get_remaining_time_in_millis.return_value = 5000
+        response = app.resolve(test_event, test_context)
+        assert response["statusCode"] == 422
+        assert "detail" in response["body"]
+        assert json.loads(response["body"])["detail"][0]["loc"] == ["path", bad_field]
 
 
 # ══════════════════════════════════════════════════════════════════

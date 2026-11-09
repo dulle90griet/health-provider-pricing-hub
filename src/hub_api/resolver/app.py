@@ -44,6 +44,7 @@ from hub_api.routes import (
     post_tender_line_items,
     patch_tender_line_item,
     get_rich_tender_line_items,
+    get_rich_tender_line_items_totals,
 )
 
 
@@ -94,3 +95,6 @@ app.route("/tender/line-items/<tender_id>/<service_id>", "PATCH")(
     patch_tender_line_item
 )
 app.route("/tender/line-items/rich/<tender_id>", "GET")(get_rich_tender_line_items)
+app.route("/tender/line-items/<tender_id>/totals", "GET")(
+    get_rich_tender_line_items_totals
+)

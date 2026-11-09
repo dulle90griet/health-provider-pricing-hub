@@ -101,7 +101,7 @@ def post_direct_cost(body: Annotated[DirectCostLaxList, Body()]) -> None:
 
 # @app.patch("/direct-cost/<service_id>/<consumable_id>")
 def patch_direct_cost(
-    service_id: str, consumable_id: str, body: Annotated[UpdateDirectCost, Body()]
+    service_id: int, consumable_id: int, body: Annotated[UpdateDirectCost, Body()]
 ) -> None:
     """PATCH method for direct_cost table"""
     logger.info(

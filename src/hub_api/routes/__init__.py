@@ -52,6 +52,7 @@ from .tender_line_items import (
 )
 from .rich_tender_line_items import (
     get_rich_tender_line_items,
+    get_rich_tender_line_items_totals,
 )
 
 __all__ = [
@@ -90,4 +91,5 @@ __all__ = [
     "post_tender_line_items",
     "patch_tender_line_item",
     "get_rich_tender_line_items",
+    "get_rich_tender_line_items_totals",
 ]

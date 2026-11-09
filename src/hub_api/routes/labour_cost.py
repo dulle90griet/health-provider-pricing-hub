@@ -102,7 +102,7 @@ def post_labour_cost(body: Annotated[LabourCostLaxList, Body()]) -> None:
 
 # @app.patch("/labour-cost/<service_id>/<title_engaged_id>")
 def patch_labour_cost(
-    service_id: str, title_engaged_id: str, body: Annotated[UpdateLabourCost, Body()]
+    service_id: int, title_engaged_id: int, body: Annotated[UpdateLabourCost, Body()]
 ) -> None:
     """PATCH method for labour_cost table"""
     logger.info(

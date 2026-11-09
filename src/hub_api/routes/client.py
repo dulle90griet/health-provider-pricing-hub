@@ -100,7 +100,7 @@ def post_client(body: Annotated[ClientLaxList, Body()]) -> None:
 
 
 # @app.patch("/client/<client_id>")
-def patch_client(client_id: str, body: Annotated[UpdateClient, Body()]) -> None:
+def patch_client(client_id: int, body: Annotated[UpdateClient, Body()]) -> None:
     """PATCH method for client table"""
     logger.info("PATCHing client ID: %s", client_id)
     logger.info(body)
