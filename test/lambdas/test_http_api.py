@@ -2058,26 +2058,44 @@ class TestPatchHandlersSQLAndParamsReflectBody:
 class TestAPIResolverWithInvalidPathParameters:
     @pytest.mark.disable_autouse
     @pytest.mark.parametrize(
-        "path",
+        "method, path, bad_field",
         [
-            ("/tender/single/%s"),
-            ("/tender/line-items/%s"),
-            ("/tender/line-items/rich/%s"),
-            ("/tender/line-items/%s/totals"),
+            ("GET", "/tender/single/%s", "tender_id"),
+            ("GET", "/tender/line-items/%s", "tender_id"),
+            ("GET", "/tender/line-items/rich/%s", "tender_id"),
+            ("GET", "/tender/line-items/%s/totals", "tender_id"),
+            ("PATCH", "/job-title/%s", "job_title_id"),
+            ("PATCH", "/consumable/%s", "consumable_id"),
+            ("PATCH", "/service/%s", "service_id"),
+            ("PATCH", "/overhead-cost/%s", "overhead_cost_id"),
+            ("PATCH", "/labour-cost/%s/1", "service_id"),
+            ("PATCH", "/labour-cost/1/%s", "title_engaged_id"),
+            ("PATCH", "/direct-cost/%s/1", "service_id"),
+            ("PATCH", "/direct-cost/1/%s", "consumable_id"),
+            ("PATCH", "/client/%s", "client_id"),
+            ("PATCH", "/tender/%s", "tender_id"),
+            ("PATCH", "/tender/line-items/%s/1", "tender_id"),
+            ("PATCH", "/tender/line-items/1/%s", "service_id"),
         ],
     )
-    def test_non_numeric_get_path_ids_return_422(self, mock_cursor, path):
+    def test_non_numeric_get_path_ids_return_422(
+        self, mock_cursor, method, path, bad_field
+    ):
+        # NB that for PATCH routes, this test relies on the invalid path ID
+        # throwing an error before the invalid (missing) body does. If that
+        # changes, the test will need to provide a specialized body per PATCH.
+
         invalid_path = path % "NaN"
         test_event = {
             "version": "2.0",
-            "routeKey": f"GET {invalid_path}",
+            "routeKey": f"{method} {invalid_path}",
             "rawPath": invalid_path,
             "rawQueryString": "",
             "queryStringParameters": None,
             "headers": {"Content-Type": "application/json"},
             "requestContext": {
                 "http": {
-                    "method": "GET",
+                    "method": method,
                     "path": invalid_path,
                 },
                 "stage": "$default",
@@ -2090,7 +2108,7 @@ class TestAPIResolverWithInvalidPathParameters:
         response = app.resolve(test_event, test_context)
         assert response["statusCode"] == 422
         assert "detail" in response["body"]
-        assert json.loads(response["body"])["detail"][0]["loc"] == ["path", "tender_id"]
+        assert json.loads(response["body"])["detail"][0]["loc"] == ["path", bad_field]
 
 
 # ══════════════════════════════════════════════════════════════════
