@@ -178,7 +178,7 @@ def get_rich_tender_line_items(
 
 
 # @app.get("/tender/line-items/<tender_id>/totals")
-def get_rich_tender_line_items_totals(tender_id: str) -> list:
+def get_rich_tender_line_items_totals(tender_id: int) -> list:
     get_totals_sql = SQL(f"""
         WITH
             tender_line_items_filtered AS (

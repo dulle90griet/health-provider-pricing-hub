@@ -75,7 +75,7 @@ def get_tender(
 
 
 # @app.get("/tender/single/<tender_id>")
-def get_tender_single(tender_id: str):
+def get_tender_single(tender_id: int):
     """
     Method to GET the tender record for the supplied id
     """
