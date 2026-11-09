@@ -2061,12 +2061,12 @@ class TestAPIResolverWithInvalidPathParameters:
         "path",
         [
             ("/tender/single/%s"),
+            ("/tender/line-items/%s"),
+            ("/tender/line-items/rich/%s"),
             ("/tender/line-items/%s/totals"),
         ],
     )
-    def test_non_numeric_get_path_ids_without_query_return_422(
-        self, mock_cursor, path
-    ):
+    def test_non_numeric_get_path_ids_return_422(self, mock_cursor, path):
         invalid_path = path % "NaN"
         test_event = {
             "version": "2.0",
@@ -2090,47 +2090,7 @@ class TestAPIResolverWithInvalidPathParameters:
         response = app.resolve(test_event, test_context)
         assert response["statusCode"] == 422
         assert "detail" in response["body"]
-        assert json.loads(response["body"])["detail"][0]["loc"] == [
-            "path", "tender_id"
-        ]
-
-    @pytest.mark.disable_autouse
-    @pytest.mark.parametrize(
-        "path",
-        [
-            ("/tender/line-items/%s"),
-            ("/tender/line-items/rich/%s"),
-        ],
-    )
-    def test_non_numeric_get_path_ids_with_query_return_422(
-        self, mock_cursor, path
-    ):
-        invalid_path = path % "NaN"
-        test_event = {
-            "version": "2.0",
-            "routeKey": f"GET {invalid_path}",
-            "rawPath": invalid_path,
-            "rawQueryString": "",
-            "queryStringParameters": None,
-            "headers": {"Content-Type": "application/json"},
-            "requestContext": {
-                "http": {
-                    "method": "GET",
-                    "path": invalid_path,
-                },
-                "stage": "$default",
-            },
-            "body": None,
-            "isBase64Encoded": False,
-        }
-        test_context = MagicMock()
-        test_context.get_remaining_time_in_millis.return_value = 5000
-        response = app.resolve(test_event, test_context)
-        assert response["statusCode"] == 422
-        assert "detail" in response["body"]
-        assert json.loads(response["body"])["detail"][0]["loc"] == [
-            "path", "tender_id"
-        ]
+        assert json.loads(response["body"])["detail"][0]["loc"] == ["path", "tender_id"]
 
 
 # ══════════════════════════════════════════════════════════════════
