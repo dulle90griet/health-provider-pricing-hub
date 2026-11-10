@@ -82,6 +82,8 @@ BASE_CTE_SQL = """
             LEFT OUTER JOIN service s
                 ON ft.service_id = s.id
             LEFT OUTER JOIN labour_costs_summed lc
+                ON ft.service_id = lc.service_id
+            LEFT OUTER JOIN direct_costs_summed dc
                 ON ft.service_id = dc.service_id
         )
 """
