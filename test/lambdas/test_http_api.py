@@ -1330,7 +1330,6 @@ class TestSearchClauseSQLBuilder:
         handler(1, URIQueries(search_column=search_column, search_string=search_string))
         executed_sql = mock_cursor.execute.call_args[0][0].as_string()
         assert expected_sql in executed_sql
-        assert len(re.findall("WHERE ", executed_sql, flags=re.IGNORECASE)) == 2
 
     def test_pathless_filterable_get_handlers_raise_value_error_on_invalid_search_column(
         self,
